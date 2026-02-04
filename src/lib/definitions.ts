@@ -196,18 +196,6 @@ export const livestockTypes = [
   'Lainnya',
 ];
 
-export const treatmentTypes = [
-  'Injeksi',
-  'Per Oral',
-  'Kutaneus/Topikal',
-  'Subkutaneus',
-  'Intravena',
-  'Intrauteri',
-  'Intraanal',
-  'Intramamae',
-  'Lainnya',
-];
-
 export const dosageUnits = [
   'ml',
   'mg',
@@ -298,32 +286,3 @@ export const caseStatusOptions = [
   'Tidak Sembuh',
   'Mati',
 ];
-
-export const priorityOfficerList = [
-    'drh. M Ishak',
-    'drh. Iqbal Djamil',
-    'drh. Stephani',
-    'drh. Ketut Elok',
-].sort();
-
-export const prioritySyndromeOptions = [
-  'Mati Meningkat Pada Unggas',
-  'Mati Mendadak',
-  'Gila Galak',
-  'Demam Pada Babi',
-  'Keguguran atau Sendi Bengkak',
-  'Pincang AirLiur dan Lepuh',
-  'Penyakit Luar Biasa',
-  'Keringat Berdarah',
-];
-
-export const priorityDiagnosisOptions = [
-  'Flu Burung',
-  'Rabies',
-  'Brucellosis',
-  'Penyakit Mulut dan Kuku (PMK)',
-  'Jembrana',
-  'Lumpy Skin Disease (LSD)',
-  'African Swine Fever (ASF)',
-  'Anthrax',
-].sort();

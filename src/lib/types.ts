@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const treatmentSchema = z.object({
@@ -30,20 +31,8 @@ export const serviceSchema = z.object({
     (val) => val === undefined || val === '' || /^(\+62|0)8[1-9][0-9]{7,11}$/.test(val), {
     message: "Format No. HP tidak valid. Contoh: 081234567890",
   }),
-  caseId: z.string().optional().default('').refine(
-    (val) => {
-      if (!val) return true; // Allow empty string
-      return /^\d{8,10}$/.test(val);
-    },
-    {
-      message: "ID Kasus iSIKHNAS harus terdiri dari 8 hingga 10 angka.",
-    }
-  ),
   livestockType: z.string().min(1, "Wajib diisi."),
   livestockCount: z.coerce.number().min(1, "Jumlah ternak harus minimal 1."),
-  clinicalSymptoms: z.string().min(1, "Wajib diisi."),
-  diagnosis: z.string().min(1, "Wajib diisi."),
-  treatmentType: z.string().min(1, "Wajib diisi."),
   treatments: z.array(treatmentSchema).min(1, "Minimal satu pengobatan harus ditambahkan."),
   caseDevelopment: z.string().optional(),
   caseDevelopments: z.array(caseDevelopmentEntrySchema).min(1, "Minimal satu perkembangan kasus wajib ditambahkan.").optional(),

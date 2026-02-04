@@ -78,9 +78,6 @@ function ReportSkeleton() {
               <TableHead>
                 <Skeleton className="h-5 w-full" />
               </TableHead>
-              <TableHead>
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
               <TableHead className="w-[100px]">
                 <Skeleton className="h-5 w-full" />
               </TableHead>
@@ -88,17 +85,17 @@ function ReportSkeleton() {
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={7}>
+              <TableCell colSpan={6}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell colSpan={7}>
+              <TableCell colSpan={6}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell colSpan={7}>
+              <TableCell colSpan={6}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
@@ -190,14 +187,6 @@ function ServiceCard({
                 {service.ownerAddress}
               </p>
             </div>
-            {service.caseId && (
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground">
-                  ID iSIKHNAS
-                </div>
-                <p className="text-sm">{service.caseId}</p>
-              </div>
-            )}
             <div>
               <div className="text-xs font-semibold text-muted-foreground">
                 Ternak
@@ -205,12 +194,6 @@ function ServiceCard({
               <Badge variant="secondary">
                 {service.livestockType} ({service.livestockCount})
               </Badge>
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-muted-foreground">
-                Diagnosa
-              </div>
-              <p className="text-sm">{service.diagnosis}</p>
             </div>
             <div>
               <div className="text-xs font-semibold text-muted-foreground">
@@ -425,7 +408,6 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
               <TableHead className="w-[120px]">Tanggal</TableHead>
               <TableHead>Pemilik</TableHead>
               <TableHead>Jenis Ternak</TableHead>
-              <TableHead>Diagnosa</TableHead>
               <TableHead>Pengobatan</TableHead>
               <TableHead>Petugas</TableHead>
               <TableHead className="w-[100px] text-center">Aksi</TableHead>
@@ -445,22 +427,14 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
                     <div className="text-xs text-muted-foreground">
                       {service.ownerAddress}
                     </div>
-                    {service.caseId && (
-                        <div className="text-xs text-muted-foreground pt-1">
-                          ID: {service.caseId}
-                        </div>
-                    )}
                   </TableCell>
                   <TableCell className="align-top">
-                    <Badge variant="secondary">
-                      {service.livestockType} ({service.livestockCount})
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="align-top">
-                    <div className="flex flex-col gap-1">
-                      <span>{service.diagnosis}</span>
+                     <div className="flex flex-col gap-1">
+                      <Badge variant="secondary" className="w-fit">
+                        {service.livestockType} ({service.livestockCount})
+                      </Badge>
                       {((service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0)) || service.caseDevelopment) && (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 mt-1">
                             {service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0) ? (
                                 service.caseDevelopments.filter(d => d.status && d.count > 0).map((dev, index) => (
                                 <Badge
@@ -538,7 +512,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <PawPrint className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">

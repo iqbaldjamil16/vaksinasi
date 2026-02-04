@@ -43,9 +43,7 @@ interface RecapData {
     medicines: { [medicineName: string]: { count: number, unit: string } };
     cases: { 
         [desa: string]: {
-            [livestockType: string]: {
-                [diagnosis: string]: number 
-            }
+            [livestockType: string]: number 
         }
     };
 }
@@ -57,16 +55,12 @@ function processRecapData(services: HealthcareService[]): RecapData {
     services.forEach(service => {
         const desa = service.ownerAddress.trim() || 'Tidak Diketahui';
         const livestockType = service.livestockType.trim();
-        const diagnosis = service.diagnosis.trim();
 
         if (!recap.cases[desa]) {
             recap.cases[desa] = {};
         }
-        if (!recap.cases[desa][livestockType]) {
-            recap.cases[desa][livestockType] = {};
-        }
         
-        recap.cases[desa][livestockType][diagnosis] = (recap.cases[desa][livestockType][diagnosis] || 0) + service.livestockCount;
+        recap.cases[desa][livestockType] = (recap.cases[desa][livestockType] || 0) + service.livestockCount;
 
         service.treatments.forEach(treatment => {
             const medicineName = treatment.medicineName.trim();
@@ -219,7 +213,6 @@ export default function RekapTopoyoPage() {
               const ownerName = service.ownerName.toLowerCase();
               const officerName = service.officerName.toLowerCase();
               const puskeswan = service.puskeswan.toLowerCase();
-              const diagnosis = service.diagnosis.toLowerCase();
               const livestockType = service.livestockType.toLowerCase();
               const formattedDate = format(new Date(service.date), 'dd MMM yyyy', {
                 locale: id,
@@ -229,7 +222,6 @@ export default function RekapTopoyoPage() {
                 ownerName.includes(lowercasedFilter) ||
                 officerName.includes(lowercasedFilter) ||
                 puskeswan.includes(lowercasedFilter) ||
-                diagnosis.includes(lowercasedFilter) ||
                 livestockType.includes(lowercasedFilter) ||
                 formattedDate.includes(lowercasedFilter)
               );
@@ -297,7 +289,7 @@ export default function RekapTopoyoPage() {
         officerNames.forEach(officerName => {
             const officerServices = servicesByOfficer[officerName].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
             
-            const tableHeaders = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Gejala Klinis', 'Diagnosa', 'Jenis Penanganan', 'Obat yang Digunakan', 'Dosis', 'Jumlah Ternak'];
+            const tableHeaders = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Obat yang Digunakan', 'Dosis', 'Jumlah Ternak'];
             
             const sheetData: any[][] = [
                 ["PEMERINTAHAN KABUPATEN MAMUJU TENGAH"],
@@ -318,9 +310,6 @@ export default function RekapTopoyoPage() {
                     service.ownerName,
                     service.ownerAddress,
                     service.livestockType,
-                    service.clinicalSymptoms,
-                    service.diagnosis,
-                    service.treatmentType,
                     service.treatments.map((t) => t.medicineName).join(', '),
                     service.treatments.map((t) => `${t.dosageValue} ${t.dosageUnit}`).join(', '),
                     service.livestockCount,
@@ -341,9 +330,6 @@ export default function RekapTopoyoPage() {
                 { wch: 20 }, 
                 { wch: 20 }, 
                 { wch: 15 }, 
-                { wch: 40 }, 
-                { wch: 20 }, 
-                { wch: 15 }, 
                 { wch: 30 }, 
                 { wch: 20 }, 
                 { wch: 12 }, 
@@ -355,25 +341,20 @@ export default function RekapTopoyoPage() {
 
         const data = recapData;
         if (data && Object.keys(data.cases).length > 0) {
-            const diagnosisDataForSheet = Object.entries(data.cases).flatMap(([desa, livestockData]) => {
-                return Object.entries(livestockData).flatMap(([livestockType, diagnoses]) => {
-                    return Object.entries(diagnoses).map(([diagnosis, count]) => ({
-                        'Bulan': monthLabel,
-                        'Desa': desa,
-                        'Jenis Hewan': livestockType,
-                        'Diagnosa': diagnosis,
-                        'Jumlah Kasus': count,
-                    }));
-                });
+            const caseDataForSheet = Object.entries(data.cases).flatMap(([desa, livestockData]) => {
+                return Object.entries(livestockData).map(([livestockType, count]) => ({
+                    'Bulan': monthLabel,
+                    'Desa': desa,
+                    'Jenis Ternak': livestockType,
+                    'Jumlah': count,
+                }));
             }).sort((a, b) => {
                 const desaComp = a['Desa'].localeCompare(b['Desa']);
                 if (desaComp !== 0) return desaComp;
-                const hewanComp = a['Jenis Hewan'].localeCompare(b['Jenis Hewan']);
-                if (hewanComp !== 0) return hewanComp;
-                return a['Diagnosa'].localeCompare(b['Diagnosa']);
+                return a['Jenis Ternak'].localeCompare(b['Jenis Ternak']);
             });
 
-            const wsKasus = XLSX.utils.json_to_sheet(diagnosisDataForSheet);
+            const wsKasus = XLSX.utils.json_to_sheet(caseDataForSheet);
             XLSX.utils.book_append_sheet(wb, wsKasus, "Rekap Kasus Topoyo");
         }
 
@@ -466,35 +447,31 @@ export default function RekapTopoyoPage() {
                 <CardContent className="px-4 sm:px-6 pb-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="overflow-x-auto">
-                            <h3 className="font-semibold mb-2">Rekap Kasus/Diagnosa</h3>
+                            <h3 className="font-semibold mb-2">Rekap Kasus Ternak</h3>
                             <div className="rounded-md border">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Desa</TableHead>
-                                            <TableHead>Jenis Hewan</TableHead>
-                                            <TableHead>Diagnosa</TableHead>
+                                            <TableHead>Jenis Ternak</TableHead>
                                             <TableHead className="text-right w-[80px]">Jumlah</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                     {Object.keys(recapData.cases).length > 0 ? Object.keys(recapData.cases).sort().map((desa) => 
-                                        Object.entries(recapData.cases[desa]).flatMap(([livestockType, diagnoses], livestockIndex) => 
-                                            Object.entries(diagnoses).map(([diagnosis, count], diagnosisIndex) => (
-                                                <TableRow key={`${desa}-${livestockType}-${diagnosis}`}>
-                                                    {livestockIndex === 0 && diagnosisIndex === 0 && (
-                                                        <TableCell rowSpan={Object.values(recapData.cases[desa]).reduce((total, d) => total + Object.keys(d).length, 0)} className="align-top font-medium">{desa}</TableCell>
+                                        Object.entries(recapData.cases[desa]).map(([livestockType, count], livestockIndex) => 
+                                            (
+                                                <TableRow key={`${desa}-${livestockType}`}>
+                                                    {livestockIndex === 0 && (
+                                                        <TableCell rowSpan={Object.keys(recapData.cases[desa]).length} className="align-top font-medium">{desa}</TableCell>
                                                     )}
-                                                    {diagnosisIndex === 0 && (
-                                                        <TableCell rowSpan={Object.keys(diagnoses).length} className="align-top">{livestockType}</TableCell>
-                                                    )}
-                                                    <TableCell>{diagnosis}</TableCell>
+                                                    <TableCell>{livestockType}</TableCell>
                                                     <TableCell className="text-right font-medium">{count}</TableCell>
                                                 </TableRow>
-                                            ))
+                                            )
                                         )
                                     ) : (
-                                        <TableRow><TableCell colSpan={4} className="text-center">Tidak ada kasus</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={3} className="text-center">Tidak ada kasus</TableCell></TableRow>
                                     )}
                                     </TableBody>
                                 </Table>

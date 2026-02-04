@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -7,7 +8,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList, C
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { type HealthcareService } from "@/lib/types";
-import { priorityDiagnosisOptions } from "@/lib/definitions";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface StatItem {
@@ -15,7 +15,7 @@ interface StatItem {
   count: number;
 }
 
-function calculateStats(services: HealthcareService[], groupBy: 'month' | 'officerName' | 'puskeswan' | 'diagnosis'): StatItem[] {
+function calculateStats(services: HealthcareService[], groupBy: 'month' | 'officerName' | 'puskeswan'): StatItem[] {
   if (services.length === 0) return [];
 
   const counts: { [key: string]: number } = {};
@@ -260,17 +260,6 @@ const StatPieChart = ({ title, data, colors, defaultColor }: {
   );
 };
 
-function getGenericLivestockType(type: string): string {
-    const trimmedType = type.trim();
-    const lowerType = trimmedType.toLowerCase();
-    if (lowerType.startsWith('sapi')) return 'Sapi';
-    if (lowerType.startsWith('kambing')) return 'Kambing';
-    if (lowerType.startsWith('ayam')) return 'Ayam';
-    if (lowerType.startsWith('kucing')) return 'Kucing';
-    if (lowerType.startsWith('anjing')) return 'Anjing';
-    return trimmedType; // Return original but trimmed
-}
-
 export default function StatisticsDisplay({ services }: { services: HealthcareService[] }) {
   if (services.length === 0) {
     return (
@@ -286,49 +275,10 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
     );
   }
 
-  const priorityServices = services.filter((service) =>
-    priorityDiagnosisOptions.includes(service.diagnosis)
-  );
-  const keswanServices = services.filter(
-    (service) => !priorityDiagnosisOptions.includes(service.diagnosis)
-  );
-
   const statsByMonth = calculateStats(services, 'month');
   const statsByOfficer = calculateStats(services, 'officerName');
   const statsByPuskeswan = calculateStats(services, 'puskeswan');
 
-  const statsByDiagnosisAndAnimal: {
-    [animalType: string]: { [diagnosis: string]: number };
-  } = {};
-  keswanServices.forEach((service) => {
-    const genericType = getGenericLivestockType(service.livestockType.trim());
-    if (!statsByDiagnosisAndAnimal[genericType]) {
-      statsByDiagnosisAndAnimal[genericType] = {};
-    }
-    const diagnosis = service.diagnosis.trim();
-    statsByDiagnosisAndAnimal[genericType][diagnosis] = (statsByDiagnosisAndAnimal[genericType][diagnosis] || 0) + service.livestockCount;
-  });
-
-  const diagnosisCharts = Object.entries(statsByDiagnosisAndAnimal)
-    .sort(([animalA], [animalB]) => animalA.localeCompare(animalB))
-    .map(([animalType, diagnoses]) => {
-      const chartData: StatItem[] = Object.entries(diagnoses)
-        .map(([name, count]) => ({ name, count }))
-        .filter(item => item.count > 0)
-        .sort((a, b) => b.count - a.count);
-
-      if (chartData.length === 0) return null;
-
-      return (
-        <StatChart
-          key={animalType}
-          title={`Statistik Kasus/Penyakit - ${animalType}`}
-          data={chartData}
-          showAll={true}
-        />
-      );
-    })
-    .filter(Boolean);
 
   const officerToPuskeswanMap: { [key: string]: string } = {};
   services.forEach((service) => {
@@ -340,8 +290,6 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
       officerToPuskeswanMap[service.officerName] = service.puskeswan;
     }
   });
-
-  const priorityDiagnosisStats = calculateStats(priorityServices, 'diagnosis');
 
   const puskeswanColors: { [key: string]: string } = {
     'Puskeswan Topoyo': '#00008B',
@@ -377,9 +325,7 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
       .sort((a, b) => b.count - a.count);
   }
 
-  const keswanCaseDevelopmentStats = calculateCaseDevelopmentStats(keswanServices);
-  const priorityCaseDevelopmentStats =
-    calculateCaseDevelopmentStats(priorityServices);
+  const caseDevelopmentStats = calculateCaseDevelopmentStats(services);
 
   return (
     <div className="space-y-6">
@@ -404,30 +350,14 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
         colors={puskeswanColors}
         defaultColor={defaultColor}
       />
-      {priorityDiagnosisStats.length > 0 && (
-        <StatChart
-          title="Statistik Kasus/Penyakit Prioritas"
-          data={priorityDiagnosisStats}
-          showAll={true}
-        />
-      )}
-      {keswanCaseDevelopmentStats.length > 0 && (
+      {caseDevelopmentStats.length > 0 && (
         <StatPieChart
           title="Statistik Perkembangan Kasus"
-          data={keswanCaseDevelopmentStats}
+          data={caseDevelopmentStats}
           colors={caseStatusColors}
           defaultColor={defaultCaseStatusColor}
         />
       )}
-      {priorityCaseDevelopmentStats.length > 0 && (
-        <StatPieChart
-          title="Statistik Perkembangan Kasus Prioritas"
-          data={priorityCaseDevelopmentStats}
-          colors={caseStatusColors}
-          defaultColor={defaultCaseStatusColor}
-        />
-      )}
-      {diagnosisCharts}
     </div>
   );
 }

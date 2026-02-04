@@ -40,10 +40,6 @@
           "type": "string",
           "description": "Owner's phone number. Optional."
         },
-        "caseId": {
-          "type": "string",
-          "description": "ID Kasus iSIKHNAS (Indonesian Animal Health Information System)."
-        },
         "livestockType": {
           "type": "string",
           "description": "Type of livestock."
@@ -51,18 +47,6 @@
         "livestockCount": {
           "type": "number",
           "description": "Number of livestock affected."
-        },
-        "clinicalSymptoms": {
-          "type": "string",
-          "description": "Observed clinical symptoms."
-        },
-        "diagnosis": {
-          "type": "string",
-          "description": "Diagnosis of the livestock condition."
-        },
-        "treatmentType": {
-          "type": "string",
-          "description": "Type of treatment provided."
         },
         "treatments": {
           "type": "array",
@@ -99,9 +83,6 @@
         "ownerAddress",
         "livestockType",
         "livestockCount",
-        "clinicalSymptoms",
-        "diagnosis",
-        "treatmentType",
         "treatments"
       ]
     }

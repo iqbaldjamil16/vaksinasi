@@ -12,7 +12,7 @@ import { doc, updateDoc, addDoc, collection, Timestamp, Firestore } from 'fireba
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
-import { medicineData, medicineTypes, type MedicineType, livestockTypes, puskeswanList, treatmentTypes, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions, priorityOfficerList, prioritySyndromeOptions, priorityDiagnosisOptions } from "@/lib/definitions";
+import { medicineData, medicineTypes, type MedicineType, livestockTypes, puskeswanList, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions } from "@/lib/definitions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,21 +32,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useFirebase } from "@/firebase";
 
 
-export function ServiceForm({ initialData, formType = 'keswan' }: { initialData?: HealthcareService, formType?: 'keswan' | 'priority' }) {
+export function ServiceForm({ initialData }: { initialData?: HealthcareService }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const router = useRouter();
   const isEditMode = !!initialData;
-  const [showManualTreatmentType, setShowManualTreatmentType] = useState(
-    initialData ? !treatmentTypes.includes(initialData.treatmentType) : false
-  );
   const [showManualLivestockType, setShowManualLivestockType] = useState(
     initialData ? !livestockTypes.includes(initialData.livestockType) : false
   );
@@ -67,12 +63,8 @@ export function ServiceForm({ initialData, formType = 'keswan' }: { initialData?
       ownerAddress: "",
       nik: "",
       phoneNumber: "",
-      caseId: "",
       livestockType: "",
       livestockCount: 1,
-      clinicalSymptoms: "",
-      diagnosis: "",
-      treatmentType: "",
       treatments: [{ medicineType: "", medicineName: "", dosageValue: 0, dosageUnit: "ml" }],
       caseDevelopments: [{ status: "", count: 1 }],
     },
@@ -251,23 +243,6 @@ export function ServiceForm({ initialData, formType = 'keswan' }: { initialData?
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nama Petugas</FormLabel>
-                      {formType === 'priority' ? (
-                        <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                        >
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih Nama Petugas" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {priorityOfficerList.map((officer) => (
-                                    <SelectItem key={officer} value={officer}>{officer}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                      ) : (
                         <>
                           {isOfficerSelection && !showManualOfficerName ? (
                             <Select
@@ -302,7 +277,6 @@ export function ServiceForm({ initialData, formType = 'keswan' }: { initialData?
                             </FormControl>
                           )}
                         </>
-                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -403,28 +377,6 @@ export function ServiceForm({ initialData, formType = 'keswan' }: { initialData?
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4">
-                <FormField
-                  control={form.control}
-                  name="caseId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        ID Kasus iSIKHNAS
-                        <span className="ml-2 text-xs italic font-normal text-muted-foreground">
-                          (Opsional, Dapat Diisi &amp; Tidak, Dapatkan Kode Dari Isikhnas)
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="contoh : 53144622" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-            <Card>
                 <CardContent className="p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
@@ -492,128 +444,6 @@ export function ServiceForm({ initialData, formType = 'keswan' }: { initialData?
           </div>
 
           <div className="space-y-4 md:space-y-6">
-            <Card>
-              <CardContent className="p-4">
-                <FormField
-                  control={form.control}
-                  name="clinicalSymptoms"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{formType === 'keswan' ? 'Gejala Klinis' : 'Sindrom'}</FormLabel>
-                      {formType === 'priority' ? (
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pilih Sindrom Prioritas" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {prioritySyndromeOptions.map((option) => (
-                              <SelectItem key={option} value={option}>{option}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <FormControl>
-                          <Textarea placeholder="Deskripsi gejala klinis" {...field} />
-                        </FormControl>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                 <FormField
-                  control={form.control}
-                  name="diagnosis"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Diagnosa</FormLabel>
-                      {formType === 'priority' ? (
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pilih Diagnosa Prioritas" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {priorityDiagnosisOptions.map((option) => (
-                              <SelectItem key={option} value={option}>{option}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <FormControl>
-                            <Textarea placeholder="Diagnosa penyakit" {...field} className="min-h-[60px]" />
-                        </FormControl>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 space-y-2">
-                <FormField
-                  control={form.control}
-                  name="treatmentType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Jenis Penanganan
-                        <span className="ml-2 text-xs italic font-normal text-muted-foreground">
-                          (Pilih Lainnya Jika Lebih Dari 1 Penanganan)
-                        </span>
-                      </FormLabel>
-                      {showManualTreatmentType ? (
-                        <FormControl>
-                          <Input
-                            placeholder="Masukkan jenis penanganan"
-                            {...field}
-                          />
-                        </FormControl>
-                      ) : (
-                        <Select
-                          onValueChange={(value) => {
-                            if (value === 'Lainnya') {
-                              setShowManualTreatmentType(true);
-                              field.onChange('');
-                            } else {
-                              field.onChange(value);
-                            }
-                          }}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pilih Jenis Penanganan" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {treatmentTypes.map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="space-y-4">
@@ -809,11 +639,9 @@ export function ServiceForm({ initialData, formType = 'keswan' }: { initialData?
                     <div>
                         <Label>
                           Perkembangan Kasus
-                          {formType === 'keswan' && (
                             <span className="ml-2 text-xs italic font-normal text-muted-foreground">
                               (Perkirakan Presentase Kondisi Hewan Sehingga Dapat Diisi Di Awal)
                             </span>
-                          )}
                         </Label>
                     </div>
 

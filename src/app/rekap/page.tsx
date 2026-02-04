@@ -47,9 +47,7 @@ interface RecapData {
         medicines: { [medicineName: string]: { count: number, unit: string } };
         cases: { 
             [desa: string]: {
-                [livestockType: string]: {
-                    [diagnosis: string]: number 
-                }
+                [livestockType: string]: number 
             }
         };
     };
@@ -66,16 +64,12 @@ function processRecapData(services: HealthcareService[]): RecapData {
 
         const desa = service.ownerAddress.trim() || 'Tidak Diketahui';
         const livestockType = service.livestockType.trim();
-        const diagnosis = service.diagnosis.trim();
 
         if (!recap[service.puskeswan].cases[desa]) {
             recap[service.puskeswan].cases[desa] = {};
         }
-        if (!recap[service.puskeswan].cases[desa][livestockType]) {
-            recap[service.puskeswan].cases[desa][livestockType] = {};
-        }
         
-        recap[service.puskeswan].cases[desa][livestockType][diagnosis] = (recap[service.puskeswan].cases[desa][livestockType][diagnosis] || 0) + service.livestockCount;
+        recap[service.puskeswan].cases[desa][livestockType] = (recap[service.puskeswan].cases[desa][livestockType] || 0) + service.livestockCount;
         
 
         service.treatments.forEach(treatment => {
@@ -210,7 +204,7 @@ export default function RekapPage() {
             return null;
         }
     
-        const totalCases: { [livestockType: string]: { [diagnosis: string]: number } } = {};
+        const totalCases: { [livestockType: string]: number } = {};
         const totalMedicines: { [medicineName: string]: { count: number, unit: string } } = {};
     
         for (const puskeswan of puskeswanList) {
@@ -221,12 +215,7 @@ export default function RekapPage() {
             if (data.cases) {
                 for (const desa in data.cases) {
                     for (const livestockType in data.cases[desa]) {
-                        if (!totalCases[livestockType]) {
-                            totalCases[livestockType] = {};
-                        }
-                        for (const diagnosis in data.cases[desa][livestockType]) {
-                            totalCases[livestockType][diagnosis] = (totalCases[livestockType][diagnosis] || 0) + data.cases[desa][livestockType][diagnosis];
-                        }
+                        totalCases[livestockType] = (totalCases[livestockType] || 0) + data.cases[desa][livestockType];
                     }
                 }
             }
@@ -264,23 +253,18 @@ export default function RekapPage() {
             if (!data) return;
 
             // Rekap Kasus
-            const diagnosisHeader = [{ 'Rekap Kasus/Diagnosa': '' }];
-            const diagnosisDataForSheet = Object.entries(data.cases).flatMap(([desa, livestockData]) => {
-                return Object.entries(livestockData).flatMap(([livestockType, diagnoses]) => {
-                    return Object.entries(diagnoses).map(([diagnosis, count]) => ({
-                        'Bulan': monthLabel,
-                        'Desa': desa,
-                        'Jenis Hewan': livestockType,
-                        'Diagnosa': diagnosis,
-                        'Jumlah Kasus': count,
-                    }));
-                });
+            const caseHeader = [{ 'Rekap Kasus Ternak': '' }];
+            const caseDataForSheet = Object.entries(data.cases).flatMap(([desa, livestockData]) => {
+                return Object.entries(livestockData).map(([livestockType, count]) => ({
+                    'Bulan': monthLabel,
+                    'Desa': desa,
+                    'Jenis Ternak': livestockType,
+                    'Jumlah': count,
+                }));
             }).sort((a, b) => {
                 const desaComp = a['Desa'].localeCompare(b['Desa']);
                 if (desaComp !== 0) return desaComp;
-                const hewanComp = a['Jenis Hewan'].localeCompare(b['Jenis Hewan']);
-                if (hewanComp !== 0) return hewanComp;
-                return a['Diagnosa'].localeCompare(b['Diagnosa']);
+                return a['Jenis Ternak'].localeCompare(b['Jenis Ternak']);
             });
 
             // Rekap Obat
@@ -293,8 +277,8 @@ export default function RekapPage() {
                     'Total Dosis': `${formatDosage(count)} ${unit}`,
             }));
             
-            const ws = XLSX.utils.json_to_sheet(diagnosisHeader, { skipHeader: true });
-            XLSX.utils.sheet_add_json(ws, diagnosisDataForSheet, { origin: 'A2' });
+            const ws = XLSX.utils.json_to_sheet(caseHeader, { skipHeader: true });
+            XLSX.utils.sheet_add_json(ws, caseDataForSheet, { origin: 'A2' });
 
             // Add some empty rows for spacing
             XLSX.utils.sheet_add_json(ws, [{}], { origin: -1, skipHeader: true });
@@ -310,19 +294,14 @@ export default function RekapPage() {
         // Add Rekap Total Puskeswan sheet
         if (totalRecapData) {
             // Total Rekap Kasus
-            const totalDiagnosisHeader = [{ 'Rekap Total Kasus/Diagnosa': '' }];
-            const totalDiagnosisDataForSheet = Object.entries(totalRecapData.cases)
+            const totalCaseHeader = [{ 'Rekap Total Kasus Ternak': '' }];
+            const totalCaseDataForSheet = Object.entries(totalRecapData.cases)
                 .sort(([a], [b]) => a.localeCompare(b))
-                .flatMap(([livestockType, diagnoses]) => {
-                    return Object.entries(diagnoses)
-                        .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([diagnosis, count]) => ({
-                            'Bulan': monthLabel,
-                            'Jenis Hewan': livestockType,
-                            'Diagnosa': diagnosis,
-                            'Jumlah Kasus': count,
-                        }));
-                });
+                .map(([livestockType, count]) => ({
+                    'Bulan': monthLabel,
+                    'Jenis Ternak': livestockType,
+                    'Jumlah': count,
+                }));
 
             // Total Rekap Obat
             const totalMedicineHeader = [{ 'Rekap Total Obat': '' }];
@@ -334,8 +313,8 @@ export default function RekapPage() {
                     'Total Dosis': `${formatDosage(count)} ${unit}`,
                 }));
 
-            const wsTotal = XLSX.utils.json_to_sheet(totalDiagnosisHeader, { skipHeader: true });
-            XLSX.utils.sheet_add_json(wsTotal, totalDiagnosisDataForSheet, { origin: 'A2' });
+            const wsTotal = XLSX.utils.json_to_sheet(totalCaseHeader, { skipHeader: true });
+            XLSX.utils.sheet_add_json(wsTotal, totalCaseDataForSheet, { origin: 'A2' });
 
             XLSX.utils.sheet_add_json(wsTotal, [{}], { origin: -1, skipHeader: true });
             XLSX.utils.sheet_add_json(wsTotal, [{}], { origin: -1, skipHeader: true });
@@ -354,9 +333,9 @@ export default function RekapPage() {
   return (
     <div className="container px-4 sm:px-8 py-4 md:py-8">
        <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Rekap Obat dan Kasus</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Rekap Obat dan Ternak</h1>
         <p className="text-muted-foreground mt-2 text-sm md:text-base">
-          Ringkasan penggunaan obat dan kasus yang ditangani per Puskeswan.
+          Ringkasan penggunaan obat dan jumlah ternak yang ditangani per Puskeswan.
         </p>
 
         <div className="mt-6 md:mt-8">
@@ -401,42 +380,34 @@ export default function RekapPage() {
                                 <AccordionContent className="px-4 sm:px-6 pb-6">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         <div className="overflow-x-auto">
-                                            <h3 className="font-semibold mb-2">Rekap Kasus/Diagnosa</h3>
+                                            <h3 className="font-semibold mb-2">Rekap Kasus Ternak</h3>
                                             <div className="rounded-md border">
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow>
                                                             <TableHead>Desa</TableHead>
-                                                            <TableHead>Jenis Hewan</TableHead>
-                                                            <TableHead>Diagnosa</TableHead>
+                                                            <TableHead>Jenis Ternak</TableHead>
                                                             <TableHead className="text-right w-[80px]">Jumlah</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
                                                     {sortedDesa.length > 0 ? sortedDesa.map((desa) => 
-                                                        Object.entries(data.cases[desa]).flatMap(([livestockType, diagnoses], livestockIndex) => 
-                                                            Object.entries(diagnoses).map(([diagnosis, count], diagnosisIndex) => (
-                                                                <TableRow key={`${desa}-${livestockType}-${diagnosis}`}>
-                                                                    {livestockIndex === 0 && diagnosisIndex === 0 && (
-                                                                        <TableCell rowSpan={
-                                                                            Object.values(data.cases[desa]).reduce((total, diagnoses) => total + Object.keys(diagnoses).length, 0)
-                                                                        } className="align-top font-medium">
+                                                        Object.entries(data.cases[desa]).flatMap(([livestockType, count], livestockIndex) => 
+                                                            (
+                                                                <TableRow key={`${desa}-${livestockType}`}>
+                                                                    {livestockIndex === 0 && (
+                                                                        <TableCell rowSpan={Object.keys(data.cases[desa]).length} className="align-top font-medium">
                                                                             {desa}
                                                                         </TableCell>
                                                                     )}
-                                                                    {diagnosisIndex === 0 && (
-                                                                        <TableCell rowSpan={Object.keys(diagnoses).length} className="align-top">
-                                                                            {livestockType}
-                                                                        </TableCell>
-                                                                    )}
-                                                                    <TableCell>{diagnosis}</TableCell>
+                                                                    <TableCell>{livestockType}</TableCell>
                                                                     <TableCell className="text-right font-medium">{count}</TableCell>
                                                                 </TableRow>
-                                                            ))
+                                                            )
                                                         )
                                                     ) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={4} className="text-center">Tidak ada kasus</TableCell>
+                                                            <TableCell colSpan={3} className="text-center">Tidak ada kasus</TableCell>
                                                         </TableRow>
                                                     )}
                                                     </TableBody>
@@ -478,13 +449,12 @@ export default function RekapPage() {
                             <AccordionContent className="px-4 sm:px-6 pb-6">
                                 <div className="space-y-8">
                                     <div className="overflow-x-auto">
-                                        <h3 className="font-semibold mb-2">Total Rekap Kasus/Diagnosa</h3>
+                                        <h3 className="font-semibold mb-2">Total Rekap Kasus Ternak</h3>
                                         <div className="rounded-md border">
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead>Jenis Hewan</TableHead>
-                                                        <TableHead>Diagnosa</TableHead>
+                                                        <TableHead>Jenis Ternak</TableHead>
                                                         <TableHead className="text-right w-[80px]">Jumlah</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
@@ -492,23 +462,15 @@ export default function RekapPage() {
                                                     {Object.keys(totalRecapData.cases).length > 0 ? (
                                                         Object.entries(totalRecapData.cases)
                                                             .sort(([a], [b]) => a.localeCompare(b))
-                                                            .flatMap(([livestockType, diagnoses]) => {
-                                                                const sortedDiagnoses = Object.entries(diagnoses).sort(([a], [b]) => a.localeCompare(b));
-                                                                return sortedDiagnoses.map(([diagnosis, count], diagnosisIndex) => (
-                                                                    <TableRow key={`${livestockType}-${diagnosis}`}>
-                                                                        {diagnosisIndex === 0 && (
-                                                                            <TableCell rowSpan={Object.keys(diagnoses).length} className="align-top font-medium">
-                                                                                {livestockType}
-                                                                            </TableCell>
-                                                                        )}
-                                                                        <TableCell>{diagnosis}</TableCell>
-                                                                        <TableCell className="text-right font-medium">{count}</TableCell>
-                                                                    </TableRow>
-                                                                ));
-                                                            })
+                                                            .map(([livestockType, count]) => (
+                                                                <TableRow key={livestockType}>
+                                                                    <TableCell className="font-medium">{livestockType}</TableCell>
+                                                                    <TableCell className="text-right font-medium">{count}</TableCell>
+                                                                </TableRow>
+                                                            ))
                                                     ) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={3} className="text-center">Tidak ada kasus</TableCell>
+                                                            <TableCell colSpan={2} className="text-center">Tidak ada kasus</TableCell>
                                                         </TableRow>
                                                     )}
                                                 </TableBody>

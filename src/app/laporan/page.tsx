@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CornerUpLeft, Download, LayoutGrid, BarChart2 } from "lucide-react";
 import { type HealthcareService, serviceSchema } from "@/lib/types";
 import { PasswordDialog } from "@/components/password-dialog";
-import { puskeswanList, priorityDiagnosisOptions } from "@/lib/definitions";
+import { puskeswanList } from "@/lib/definitions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFirebase } from "@/firebase";
 import { Input } from "@/components/ui/input";
@@ -176,7 +176,6 @@ export default function ReportPage() {
           const ownerName = service.ownerName.toLowerCase();
           const officerName = service.officerName.toLowerCase();
           const puskeswan = service.puskeswan.toLowerCase();
-          const diagnosis = service.diagnosis.toLowerCase();
           const livestockType = service.livestockType.toLowerCase();
           const formattedDate = format(new Date(service.date), 'dd MMM yyyy', {
             locale: id,
@@ -186,7 +185,6 @@ export default function ReportPage() {
             ownerName.includes(lowercasedFilter) ||
             officerName.includes(lowercasedFilter) ||
             puskeswan.includes(lowercasedFilter) ||
-            diagnosis.includes(lowercasedFilter) ||
             livestockType.includes(lowercasedFilter) ||
             formattedDate.includes(lowercasedFilter)
           );
@@ -220,7 +218,7 @@ export default function ReportPage() {
 
     puskeswanList.forEach((puskeswan) => {
       const servicesByPuskeswan = filteredServices.filter(
-        (s) => s.puskeswan === puskeswan && !priorityDiagnosisOptions.includes(s.diagnosis)
+        (s) => s.puskeswan === puskeswan
       );
 
       if (servicesByPuskeswan.length === 0) return;
@@ -240,7 +238,7 @@ export default function ReportPage() {
       });
 
       const allDataForSheet: any[] = [];
-      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Sindrom', 'Diagnosa', 'Jenis Penanganan', 'Obat yang Digunakan', 'Dosis', 'Jumlah Ternak', 'ID Isikhnas', 'Perkembangan Kasus'];
+      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Obat yang Digunakan', 'Dosis', 'Jumlah Ternak', 'Perkembangan Kasus'];
       const officerNames = Object.keys(servicesByOfficer).sort();
 
       officerNames.forEach(officerName => {
@@ -259,13 +257,9 @@ export default function ReportPage() {
             'Nama Pemilik': service.ownerName,
             'Alamat Pemilik': service.ownerAddress,
             'Jenis Ternak': service.livestockType,
-            'Sindrom': service.clinicalSymptoms,
-            'Diagnosa': service.diagnosis,
-            'Jenis Penanganan': service.treatmentType,
             'Obat yang Digunakan': service.treatments.map((t) => t.medicineName).join(', '),
             'Dosis': service.treatments.map((t) => `${t.dosageValue} ${t.dosageUnit}`).join(', '),
             'Jumlah Ternak': service.livestockCount,
-            'ID Isikhnas': service.caseId,
             'Perkembangan Kasus': caseDevelopmentText,
           };
         });
@@ -286,70 +280,6 @@ export default function ReportPage() {
       ws['!cols'] = columnWidths;
       XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 31));
     });
-
-    const priorityServices = filteredServices.filter(s => priorityDiagnosisOptions.includes(s.diagnosis));
-    if (priorityServices.length > 0) {
-      const sortedServices = priorityServices.sort((a, b) => {
-        const officerComparison = a.officerName.localeCompare(b.officerName);
-        if (officerComparison !== 0) return officerComparison;
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      });
-
-      const servicesByOfficer: { [key: string]: HealthcareService[] } = {};
-      sortedServices.forEach(service => {
-        if (!servicesByOfficer[service.officerName]) {
-          servicesByOfficer[service.officerName] = [];
-        }
-        servicesByOfficer[service.officerName].push(service);
-      });
-
-      const allDataForSheet: any[] = [];
-      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Sindrom', 'Diagnosa', 'Jenis Penanganan', 'Obat yang Digunakan', 'Dosis', 'Jumlah Ternak', 'ID Isikhnas', 'Perkembangan Kasus'];
-      const officerNames = Object.keys(servicesByOfficer).sort();
-
-      officerNames.forEach(officerName => {
-        allDataForSheet.push({});
-        allDataForSheet.push({});
-        allDataForSheet.push({ 'Nama Petugas': officerName });
-        allDataForSheet.push(Object.fromEntries(headers.map(h => [h, h])));
-        const data = servicesByOfficer[officerName].map((service) => {
-          const caseDevelopmentText = (service.caseDevelopments || [])
-            .filter(dev => dev.status && dev.count > 0)
-            .map(dev => `${dev.status} (${dev.count})`)
-            .join(', ');
-
-          return {
-            'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
-            'Nama Pemilik': service.ownerName,
-            'Alamat Pemilik': service.ownerAddress,
-            'Jenis Ternak': service.livestockType,
-            'Sindrom': service.clinicalSymptoms,
-            'Diagnosa': service.diagnosis,
-            'Jenis Penanganan': service.treatmentType,
-            'Obat yang Digunakan': service.treatments.map((t) => t.medicineName).join(', '),
-            'Dosis': service.treatments.map((t) => `${t.dosageValue} ${t.dosageUnit}`).join(', '),
-            'Jumlah Ternak': service.livestockCount,
-            'ID Isikhnas': service.caseId,
-            'Perkembangan Kasus': caseDevelopmentText,
-          };
-        });
-        allDataForSheet.push(...data);
-      });
-
-      const sheetName = 'Laporan Prioritas';
-      const ws = XLSX.utils.json_to_sheet(allDataForSheet, { skipHeader: true });
-
-      const columnWidths = headers.map((header) => {
-        const allValues = allDataForSheet.map(row => row[header]).filter(Boolean);
-        const maxLength = allValues.reduce((max, cellValue) => {
-          const cellLength = cellValue ? String(cellValue).length : 0;
-          return Math.max(max, cellLength);
-        }, header.length);
-        return { wch: maxLength + 2 };
-      });
-      ws['!cols'] = columnWidths;
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    }
   
     const monthLabel =
       selectedMonth === 'all-months' || selectedMonth === ''
