@@ -40,7 +40,7 @@ export const serviceSchema = z.object({
   
   vaccinations: z.array(vaccinationDetailSchema).min(1, "Minimal satu detail vaksinasi harus ditambahkan."),
   
-  treatments: z.array(treatmentSchema).min(1, "Minimal satu pengobatan harus ditambahkan."),
+  treatments: z.array(treatmentSchema).optional().default([]),
   
   caseDevelopments: z.array(caseDevelopmentEntrySchema).min(1, "Minimal satu perkembangan kasus wajib ditambahkan.").optional(),
   

@@ -37,7 +37,7 @@ import { Label } from "@/components/ui/label";
 import { useFirebase } from "@/firebase";
 
 
-export function ServiceForm({ initialData }: { initialData?: HealthcareService }) {
+export function ServiceForm({ initialData, formType }: { initialData?: HealthcareService, formType?: 'keswan' | 'vaksinasi' }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -58,7 +58,7 @@ export function ServiceForm({ initialData }: { initialData?: HealthcareService }
       nik: "",
       phoneNumber: "",
       vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1 }],
-      treatments: [{ medicineType: "", medicineName: "", dosageValue: 0, dosageUnit: "ml" }],
+      treatments: [],
       caseDevelopments: [{ status: "", count: 1 }],
     },
   });
@@ -487,195 +487,197 @@ export function ServiceForm({ initialData }: { initialData?: HealthcareService }
           </div>
 
           <div className="space-y-4 md:space-y-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  <div>
-                    <Label>
-                      Pengobatan
-                      <span className="ml-2 text-xs italic font-normal text-muted-foreground">
-                        (Pilih Lainnya Jika Jenis Obat &amp; Nama Obat Tidak Tercantum)
-                      </span>
-                    </Label>
-                  </div>
+             {formType === 'keswan' && (
+                <Card>
+                <CardContent className="p-4">
+                    <div className="space-y-4">
+                    <div>
+                        <Label>
+                        Pengobatan
+                        <span className="ml-2 text-xs italic font-normal text-muted-foreground">
+                            (Pilih Lainnya Jika Jenis Obat &amp; Nama Obat Tidak Tercantum)
+                        </span>
+                        </Label>
+                    </div>
 
-                  {treatmentFields.map((item, index) => {
-                    const selectedMedicineType = watchedTreatments?.[index]?.medicineType as MedicineType;
-                    const medicineNameValue = form.watch(`treatments.${index}.medicineName`);
-                    const isManualMedicineName = medicineNameValue === 'Lainnya';
-                    const dosageUnitValue = form.watch(`treatments.${index}.dosageUnit`);
-                    const isManualDosageUnit = dosageUnitValue === 'Lainnya';
+                    {treatmentFields.map((item, index) => {
+                        const selectedMedicineType = watchedTreatments?.[index]?.medicineType as MedicineType;
+                        const medicineNameValue = form.watch(`treatments.${index}.medicineName`);
+                        const isManualMedicineName = medicineNameValue === 'Lainnya';
+                        const dosageUnitValue = form.watch(`treatments.${index}.dosageUnit`);
+                        const isManualDosageUnit = dosageUnitValue === 'Lainnya';
 
-                    const isMedicineTypeLainnya = selectedMedicineType === 'Lainnya';
+                        const isMedicineTypeLainnya = selectedMedicineType === 'Lainnya';
 
-                    return (
-                      <Card key={item.id} className="relative p-4 bg-card">
-                         {treatmentFields.length > 1 && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute -top-1 -right-1 h-6 w-6"
-                                onClick={() => removeTreatment(index)}
-                            >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                        )}
-                        <div className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name={`treatments.${index}.medicineType`}
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Jenis Obat</FormLabel>
-                                <Select
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    form.setValue(`treatments.${index}.medicineName`, '');
-                                }}
-                                defaultValue={field.value}
+                        return (
+                        <Card key={item.id} className="relative p-4 bg-card">
+                            {treatmentFields.length > 1 && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute -top-1 -right-1 h-6 w-6"
+                                    onClick={() => removeTreatment(index)}
                                 >
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Pilih Jenis" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {medicineTypes.map((type) => (
-                                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
                             )}
-                          />
-                           <FormField
-                            control={form.control}
-                            name={`treatments.${index}.medicineName`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Nama Obat</FormLabel>
-                                {isMedicineTypeLainnya || isManualMedicineName ? (
-                                   <FormControl>
-                                      <Input
-                                        placeholder="Masukkan nama obat"
-                                        {...field}
-                                        value={field.value === 'Lainnya' ? '' : field.value}
-                                        onChange={(e) => field.onChange(e.target.value)}
-                                      />
-                                    </FormControl>
-                                ) : (
-                                  <Select
+                            <div className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name={`treatments.${index}.medicineType`}
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Jenis Obat</FormLabel>
+                                    <Select
                                     onValueChange={(value) => {
-                                      field.onChange(value);
+                                        field.onChange(value);
+                                        form.setValue(`treatments.${index}.medicineName`, '');
                                     }}
-                                    value={field.value}
-                                    disabled={!selectedMedicineType}
-                                  >
+                                    defaultValue={field.value}
+                                    >
                                     <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Pilih Obat" />
-                                      </SelectTrigger>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Pilih Jenis" />
+                                        </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {selectedMedicineType && medicineData[selectedMedicineType] ? (
-                                        medicineData[selectedMedicineType].map((drug) => (
-                                          <SelectItem key={drug} value={drug}>
-                                            {drug}
-                                          </SelectItem>
-                                        ))
-                                      ) : (
-                                        <SelectItem value="-" disabled>
-                                          Pilih jenis dahulu
-                                        </SelectItem>
-                                      )}
+                                        {medicineTypes.map((type) => (
+                                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                                        ))}
                                     </SelectContent>
-                                  </Select>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
                                 )}
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <div className="space-y-2">
-                            <FormLabel>Dosis <span className="italic font-normal text-muted-foreground text-xs">(Isi Total Dosis Jika Lebih Dari 1 Ekor)</span></FormLabel>
-                            <div className="grid grid-cols-2 gap-2">
-                              <FormField
-                                  control={form.control}
-                                  name={`treatments.${index}.dosageValue`}
-                                  render={({ field }) => (
-                                  <FormItem>
-                                      <FormControl>
-                                        <Input type="number" step="0.001" placeholder="Jumlah" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                                  )}
-                              />
-                               <FormField
+                            />
+                            <FormField
                                 control={form.control}
-                                name={`treatments.${index}.dosageUnit`}
+                                name={`treatments.${index}.medicineName`}
                                 render={({ field }) => (
-                                  <FormItem>
-                                    {isManualDosageUnit ? (
-                                       <FormControl>
-                                          <Input
-                                            placeholder="Satuan"
+                                <FormItem>
+                                    <FormLabel>Nama Obat</FormLabel>
+                                    {isMedicineTypeLainnya || isManualMedicineName ? (
+                                    <FormControl>
+                                        <Input
+                                            placeholder="Masukkan nama obat"
                                             {...field}
                                             value={field.value === 'Lainnya' ? '' : field.value}
                                             onChange={(e) => field.onChange(e.target.value)}
-                                          />
+                                        />
                                         </FormControl>
                                     ) : (
-                                      <Select
+                                    <Select
                                         onValueChange={(value) => {
-                                          if (value === 'Lainnya') {
-                                            field.onChange('Lainnya');
-                                          } else {
-                                            field.onChange(value);
-                                          }
+                                        field.onChange(value);
                                         }}
                                         value={field.value}
-                                      >
+                                        disabled={!selectedMedicineType}
+                                    >
                                         <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Satuan" />
-                                          </SelectTrigger>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih Obat" />
+                                        </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                          {dosageUnits.map((unit) => (
-                                            <SelectItem key={unit} value={unit}>
-                                              {unit}
+                                        {selectedMedicineType && medicineData[selectedMedicineType] ? (
+                                            medicineData[selectedMedicineType].map((drug) => (
+                                            <SelectItem key={drug} value={drug}>
+                                                {drug}
                                             </SelectItem>
-                                          ))}
+                                            ))
+                                        ) : (
+                                            <SelectItem value="-" disabled>
+                                            Pilih jenis dahulu
+                                            </SelectItem>
+                                        )}
                                         </SelectContent>
-                                      </Select>
+                                    </Select>
                                     )}
                                     <FormMessage />
-                                  </FormItem>
+                                </FormItem>
                                 )}
-                              />
+                            />
+                            <div className="space-y-2">
+                                <FormLabel>Dosis <span className="italic font-normal text-muted-foreground text-xs">(Isi Total Dosis Jika Lebih Dari 1 Ekor)</span></FormLabel>
+                                <div className="grid grid-cols-2 gap-2">
+                                <FormField
+                                    control={form.control}
+                                    name={`treatments.${index}.dosageValue`}
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <Input type="number" step="0.001" placeholder="Jumlah" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`treatments.${index}.dosageUnit`}
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        {isManualDosageUnit ? (
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Satuan"
+                                                {...field}
+                                                value={field.value === 'Lainnya' ? '' : field.value}
+                                                onChange={(e) => field.onChange(e.target.value)}
+                                            />
+                                            </FormControl>
+                                        ) : (
+                                        <Select
+                                            onValueChange={(value) => {
+                                            if (value === 'Lainnya') {
+                                                field.onChange('Lainnya');
+                                            } else {
+                                                field.onChange(value);
+                                            }
+                                            }}
+                                            value={field.value}
+                                        >
+                                            <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Satuan" />
+                                            </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                            {dosageUnits.map((unit) => (
+                                                <SelectItem key={unit} value={unit}>
+                                                {unit}
+                                                </SelectItem>
+                                            ))}
+                                            </SelectContent>
+                                        </Select>
+                                        )}
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                </div>
                             </div>
-                          </div>
-                        </div>
-                      </Card>
-                    )
-                  })}
-                  <div className="flex justify-start">
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      className="bg-accent text-accent-foreground hover:bg-accent/90"
-                      onClick={() => appendTreatment({ medicineType: "", medicineName: "", dosageValue: 0, dosageUnit: "ml" }, { shouldFocus: false })}
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Tambah
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                            </div>
+                        </Card>
+                        )
+                    })}
+                    <div className="flex justify-start">
+                        <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        className="bg-accent text-accent-foreground hover:bg-accent/90"
+                        onClick={() => appendTreatment({ medicineType: "", medicineName: "", dosageValue: 0, dosageUnit: "ml" }, { shouldFocus: false })}
+                        >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Tambah
+                        </Button>
+                    </div>
+                    </div>
+                </CardContent>
+                </Card>
+            )}
             <Card>
                 <CardContent className="p-4">
                     <div className="space-y-4">

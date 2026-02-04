@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -56,7 +57,7 @@ export default function Home() {
           </CardHeader>
         </Card>
         <div className="mt-6 md:mt-8">
-          <ServiceForm formType="keswan" />
+          <ServiceForm formType="vaksinasi" />
         </div>
       </div>
     </div>
