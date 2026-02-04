@@ -545,7 +545,6 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                       type="button"
                       variant="default"
                       size="sm"
-                      className="bg-accent text-accent-foreground hover:bg-accent/90"
                       onClick={() => {
                         appendVaccination({ vaccineName: '', animalType: '', animalCount: 1 });
                         setShowManualVaccineName([...showManualVaccineName, false]);
@@ -742,7 +741,6 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                         type="button"
                         variant="default"
                         size="sm"
-                        className="bg-accent text-accent-foreground hover:bg-accent/90"
                         onClick={() => appendTreatment({ medicineType: "", medicineName: "", dosageValue: 0, dosageUnit: "ml" }, { shouldFocus: false })}
                         >
                         <PlusCircle className="mr-2 h-4 w-4" />
@@ -830,7 +828,6 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                               type="button"
                               variant="default"
                               size="sm"
-                              className="bg-accent text-accent-foreground hover:bg-accent/90"
                               onClick={() => appendCaseDevelopment({ status: "", count: 1 }, { shouldFocus: false })}
                           >
                               <PlusCircle className="mr-2 h-4 w-4" />
@@ -855,4 +852,6 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
   );
 }
     
+    
+
     
