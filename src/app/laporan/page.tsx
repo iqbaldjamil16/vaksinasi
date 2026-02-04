@@ -1,12 +1,13 @@
 
 'use client';
 
-import { useState, useTransition, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import * as XLSX from 'xlsx';
 import { getYear, getMonth, format, subYears, startOfMonth, endOfMonth } from "date-fns";
 import { id } from 'date-fns/locale';
 import { collection, query, orderBy, Timestamp, where } from 'firebase/firestore';
+import dynamic from "next/dynamic";
 
 import { ServiceTable } from "@/components/service-table";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -21,8 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const StatisticsDisplay = lazy(() => import('@/components/statistics-display'));
 
 function StatisticsPlaceholder() {
     return (
@@ -54,6 +53,11 @@ function StatisticsPlaceholder() {
         </div>
     );
 }
+
+const StatisticsDisplay = dynamic(() => import('@/components/statistics-display'), {
+    loading: () => <StatisticsPlaceholder />,
+    ssr: false,
+});
 
 const years = Array.from({ length: 5 }, (_, i) => getYear(subYears(new Date(), i)).toString());
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -382,9 +386,7 @@ export default function ReportPage() {
             />
           </TabsContent>
           <TabsContent value="statistik" className="md:pt-4">
-            <Suspense fallback={<StatisticsPlaceholder />}>
-              <StatisticsDisplay services={filteredServices} />
-            </Suspense>
+            <StatisticsDisplay services={filteredServices} />
           </TabsContent>
         </Card>
       </Tabs>
@@ -434,6 +436,8 @@ export default function ReportPage() {
 
 
 
+
+    
 
     
 
