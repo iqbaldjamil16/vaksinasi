@@ -205,6 +205,17 @@ export const dosageUnits = [
   'Lainnya',
 ];
 
+export const vaccinationPrograms = [
+    'Rabies',
+    'Jembrana',
+    'Hog Cholera',
+    'PMK (Penyakit Mulut dan Kuku)',
+    'ASF (African Swine Fever)',
+    'AI (Avian Influenza)',
+    'ND (Newcastle Disease)',
+    'Lainnya',
+  ];
+
 export const medicineData = {
   Antibiotik: [
     'Colibact Bolus',

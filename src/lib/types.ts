@@ -31,6 +31,7 @@ export const serviceSchema = z.object({
     (val) => val === undefined || val === '' || /^(\+62|0)8[1-9][0-9]{7,11}$/.test(val), {
     message: "Format No. HP tidak valid. Contoh: 081234567890",
   }),
+  vaccinationProgram: z.string().optional(),
   livestockType: z.string().min(1, "Wajib diisi."),
   livestockCount: z.coerce.number().min(1, "Jumlah ternak harus minimal 1."),
   treatments: z.array(treatmentSchema).min(1, "Minimal satu pengobatan harus ditambahkan."),

@@ -40,6 +40,10 @@
           "type": "string",
           "description": "Owner's phone number. Optional."
         },
+        "vaccinationProgram": {
+            "type": "string",
+            "description": "The vaccination program for the service. Optional."
+        },
         "livestockType": {
           "type": "string",
           "description": "Type of livestock."
@@ -103,5 +107,3 @@
     }
   }
 }
-
-    
