@@ -145,9 +145,9 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
           await setDoc(serviceDocRef, serviceData, { merge: true });
           toast({
             title: "Sukses",
-            description: "Data pelayanan berhasil diperbarui.",
+            description: "Data pelayanan berhasil diperbarui. Mengarahkan...",
           });
-          router.push('/laporan');
+          window.location.href = '/laporan';
       } else {
           const servicesCollection = collection(firestore, 'healthcareServices');
           const newDocRef = await addDoc(servicesCollection, serviceData);
@@ -158,10 +158,10 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
 
           toast({
               title: "Sukses",
-              description: "Data pelayanan berhasil disimpan.",
+              description: "Data pelayanan berhasil disimpan. Mengarahkan ke halaman laporan...",
           });
           
-          router.push('/laporan');
+          window.location.href = '/laporan';
       }
     } catch (error) {
       console.error("Gagal menyimpan data:", error);
