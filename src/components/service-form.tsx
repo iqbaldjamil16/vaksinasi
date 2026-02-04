@@ -147,7 +147,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
             title: "Sukses",
             description: "Data pelayanan berhasil diperbarui. Mengarahkan...",
           });
-          window.location.href = '/laporan';
+          router.push('/laporan');
       } else {
           const servicesCollection = collection(firestore, 'healthcareServices');
           const newDocRef = await addDoc(servicesCollection, serviceData);
@@ -161,7 +161,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
               description: "Data pelayanan berhasil disimpan. Mengarahkan ke halaman laporan...",
           });
           
-          window.location.href = '/laporan';
+          router.push('/laporan');
       }
     } catch (error) {
       console.error("Gagal menyimpan data:", error);
