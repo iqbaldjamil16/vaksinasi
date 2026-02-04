@@ -310,10 +310,10 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
 
   return (
     <div
-      className={cn('h-full', isPending && 'opacity-50 transition-opacity duration-300')}
+      className={cn(isPending && 'opacity-50 transition-opacity duration-300')}
     >
       {/* Mobile View */}
-      <div className="h-full overflow-y-auto md:hidden">
+      <div className="md:hidden">
         {services.length > 0 ? (
           <div className="space-y-4 p-4">
             {services.map((service) => (
