@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from 'date-fns/locale';
-import { doc, collection, Timestamp, setDoc, addDoc } from 'firebase/firestore';
+import { doc, collection, Timestamp, setDoc, addDoc, writeBatch } from 'firebase/firestore';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
@@ -149,8 +149,8 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
           });
           router.push('/laporan');
       } else {
-          const servicesCollection = collection(firestore, 'healthcareServices');
-          const newDocRef = await addDoc(servicesCollection, serviceData);
+          const newDocRef = doc(collection(firestore, 'healthcareServices'));
+          await setDoc(newDocRef, serviceData);
           
           const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
           newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
@@ -158,7 +158,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
 
           toast({
               title: "Sukses",
-              description: "Data pelayanan berhasil disimpan. Mengarahkan ke halaman laporan...",
+              description: "Data pelayanan berhasil disimpan.",
           });
           
           router.push('/laporan');

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, useTransition } from "react";
+import { useEffect, useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -33,8 +33,9 @@ import { Button } from "@/components/ui/button";
 import { Download, CornerUpLeft } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { cn } from "@/lib/utils";
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
-import { useFirebase } from "@/firebase/provider";
+import { collection, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { useFirebase, useMemoFirebase } from "@/firebase/provider";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { PasswordDialog } from "@/components/password-dialog";
 import { ServiceTable } from "@/components/service-table";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,6 @@ interface RecapData {
     };
 }
 
-// Simplified for single puskeswan
 function processRecapData(services: HealthcareService[]): RecapData {
     const recap: RecapData = { medicines: {}, cases: {} };
 
@@ -103,8 +103,6 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 
 export default function RekapTopoyoPage() {
-    const [services, setServices] = useState<HealthcareService[]>([]);
-    const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
     const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
@@ -138,15 +136,15 @@ export default function RekapTopoyoPage() {
         return () => clearInterval(interval);
     }, []);
 
-    const loadServices = useCallback(async (yearStr: string, monthStr: string) => {
-        if (!firestore) return;
-        setLoading(true);
+    const servicesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
         
-        const year = yearStr === 'all-years' ? null : parseInt(yearStr, 10);
-        const month = monthStr === 'all-months' || monthStr === '' ? null : parseInt(monthStr, 10);
+        const year = selectedYear === 'all-years' ? null : parseInt(selectedYear, 10);
+        const month = selectedMonth === 'all-months' || selectedMonth === '' ? null : parseInt(selectedMonth, 10);
 
         const servicesCollection = collection(firestore, 'healthcareServices');
         const queryConstraints: any[] = [
+            where('puskeswan', '==', 'Puskeswan Topoyo'),
             orderBy('date', 'desc')
         ];
 
@@ -162,58 +160,48 @@ export default function RekapTopoyoPage() {
             queryConstraints.push(where('date', '<=', endDate));
         }
 
-        const q = query(servicesCollection, ...queryConstraints);
+        return query(servicesCollection, ...queryConstraints);
+      }, [firestore, selectedYear, selectedMonth]);
 
-        try {
-          const querySnapshot = await getDocs(q);
-          const allFetchedServices: HealthcareService[] = [];
-          querySnapshot.forEach((doc) => {
-              const data = doc.data();
-              try {
-                  if (!data.vaccinations && data.livestockType) {
-                    data.vaccinations = [{
-                        vaccineName: data.vaccinationProgram || '',
-                        animalType: data.livestockType,
-                        animalCount: data.livestockCount || 1,
-                    }];
-                  }
-
-                  if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
-                    let status = 'Sembuh';
-                    if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
-                      status = data.caseDevelopment;
-                    }
-                    const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
-                    data.caseDevelopments = [{
-                      status: status,
-                      count: totalAnimals,
-                    }];
-                  }
-                  const service = serviceSchema.parse({
-                      ...data,
-                      id: doc.id,
-                      date: (data.date as Timestamp).toDate(),
-                  });
-                  allFetchedServices.push(service);
-              } catch (e) {
-                  console.error("Validation error parsing service data:", e);
-              }
-          });
-          const topoyoServices = allFetchedServices.filter(s => s.puskeswan === 'Puskeswan Topoyo');
-          setServices(topoyoServices);
-        } catch (error) {
-          console.error("Failed to fetch services:", error);
-          setServices([]);
-        } finally {
-            setLoading(false);
-        }
-      }, [firestore]);
+    const { data: rawServices, isLoading: loading } = useCollection<any>(servicesQuery);
     
-    useEffect(() => {
-        startTransition(() => {
-            loadServices(selectedYear, selectedMonth);
+    const services = useMemo(() => {
+        if (!rawServices) return [];
+        const fetchedServices: HealthcareService[] = [];
+        rawServices.forEach((doc) => {
+            const data = doc;
+            try {
+                if (!data.vaccinations && data.livestockType) {
+                  data.vaccinations = [{
+                      vaccineName: data.vaccinationProgram || '',
+                      animalType: data.livestockType,
+                      animalCount: data.livestockCount || 1,
+                  }];
+                }
+
+                if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
+                  let status = 'Sembuh';
+                  if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
+                    status = data.caseDevelopment;
+                  }
+                  const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
+                  data.caseDevelopments = [{
+                    status: status,
+                    count: totalAnimals,
+                  }];
+                }
+                const service = serviceSchema.parse({
+                    ...data,
+                    id: doc.id,
+                    date: (data.date as Timestamp).toDate(),
+                });
+                fetchedServices.push(service);
+            } catch (e) {
+                // console.error("Validation error parsing service data:", e);
+            }
         });
-    }, [loadServices, selectedYear, selectedMonth]);
+        return fetchedServices;
+      }, [rawServices]);
 
     useEffect(() => {
         startTransition(() => {
@@ -224,7 +212,6 @@ export default function RekapTopoyoPage() {
             servicesToFilter = servicesToFilter.filter((service) => {
               const ownerName = service.ownerName.toLowerCase();
               const officerName = service.officerName.toLowerCase();
-              const puskeswan = service.puskeswan.toLowerCase();
               const animalTypes = service.vaccinations.map(v => v.animalType.toLowerCase()).join(' ');
               const formattedDate = format(new Date(service.date), 'dd MMM yyyy', {
                 locale: id,
@@ -233,7 +220,6 @@ export default function RekapTopoyoPage() {
               return (
                 ownerName.includes(lowercasedFilter) ||
                 officerName.includes(lowercasedFilter) ||
-                puskeswan.includes(lowercasedFilter) ||
                 animalTypes.includes(lowercasedFilter) ||
                 formattedDate.includes(lowercasedFilter)
               );
@@ -251,7 +237,7 @@ export default function RekapTopoyoPage() {
     }, [searchTerm, services, highlightedIds]);
 
     const handleLocalDelete = (serviceId: string) => {
-        setServices((currentServices) =>
+        setFilteredServices((currentServices) =>
           currentServices.filter((s) => s.id !== serviceId)
         );
          const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
@@ -263,16 +249,20 @@ export default function RekapTopoyoPage() {
     };
 
     const handleMonthChange = (month: string) => {
-        setSelectedMonth(month);
+        startTransition(() => {
+            setSelectedMonth(month);
+        });
     };
 
     const handleYearChange = (year: string) => {
-        setSelectedYear(year);
-         if (year === 'all-years') {
-            setSelectedMonth('all-months');
-        } else if (year !== getYear(new Date()).toString() && selectedMonth === getMonth(new Date()).toString()){
-            setSelectedMonth('all-months');
-        }
+        startTransition(() => {
+            setSelectedYear(year);
+            if (year === 'all-years') {
+                setSelectedMonth('all-months');
+            } else if (year !== getYear(new Date()).toString() && selectedMonth === getMonth(new Date()).toString()){
+                setSelectedMonth('all-months');
+            }
+        });
     };
 
     const recapData = useMemo(() => processRecapData(services), [services]);
@@ -457,7 +447,7 @@ export default function RekapTopoyoPage() {
         {(loading || isPending) && !hasData ? (
             <RecapSkeleton />
         ) : hasData ? (
-            <Card className={cn("border rounded-lg bg-card", isPending && "opacity-50")}>
+            <Card className={cn("border rounded-lg bg-card", (isPending || loading) && "opacity-50")}>
                 <CardHeader className="px-4 sm:px-6 py-4">
                     <CardTitle className="text-lg font-bold">Ringkasan Rekapitulasi</CardTitle>
                 </CardHeader>

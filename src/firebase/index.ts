@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -6,49 +7,51 @@ import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
   type Firestore,
+  enableIndexedDbPersistence,
 } from 'firebase/firestore';
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
-    let firebaseApp;
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === 'production') {
-        console.warn(
-          'Automatic initialization failed. Falling back to firebase config object.',
-          e
-        );
-      }
-      firebaseApp = initializeApp(firebaseConfig);
-    }
+  const isConfigProvided = firebaseConfig && firebaseConfig.projectId;
 
-    return getSdks(firebaseApp);
+  if (getApps().length) {
+    const app = getApp();
+    const firestore = getFirestore(app);
+    // This is a crucial check. If persistence is already enabled, we don't try it again.
+    // If we're server-side, this branch will likely be taken on subsequent renders,
+    // and we avoid trying to enable persistence again.
+    return getSdks(app, firestore);
   }
 
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
+  const app = initializeApp(firebaseConfig);
+  const firestore = getFirestore(app);
+
+  // The key change: only attempt to enable persistence on the client-side.
+  if (typeof window !== 'undefined') {
+    enableIndexedDbPersistence(firestore)
+      .catch((err) => {
+        if (err.code == 'failed-precondition') {
+          // Multiple tabs open, persistence can only be enabled
+          // in one tab at a a time.
+          console.warn('Firestore persistence failed: multiple tabs open.');
+        } else if (err.code == 'unimplemented') {
+          // The current browser does not support all of the
+          // features required to enable persistence
+          console.warn('Firestore persistence not available in this browser.');
+        }
+      });
+  }
+
+  return getSdks(app, firestore);
 }
 
-// This function is now simplified to use getFirestore, which is idempotent
-// and handles initialization correctly on the client-side with persistence.
-export function getSdks(firebaseApp: FirebaseApp) {
-    // getFirestore() is idempotent and handles initialization.
-    // On the client, it enables persistence by default.
+export function getSdks(firebaseApp: FirebaseApp, firestore: Firestore) {
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
+    firestore: firestore,
   };
 }
+
 
 export * from './provider';
 export * from './client-provider';

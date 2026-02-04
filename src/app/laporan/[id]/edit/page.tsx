@@ -4,7 +4,8 @@
 import { useEffect, useState } from 'react';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { useFirebase } from '@/firebase/provider';
+import { useFirebase, useMemoFirebase } from '@/firebase/provider';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 import { ServiceForm } from '@/components/service-form';
 import { type HealthcareService, serviceSchema } from '@/lib/types';
@@ -34,62 +35,58 @@ export default function EditServicePage() {
   const id = params.id as string;
   const { firestore } = useFirebase();
   const [service, setService] = useState<HealthcareService | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const docRef = useMemoFirebase(() => {
+    if (!id || !firestore) return null;
+    return doc(firestore, 'healthcareServices', id);
+  }, [id, firestore]);
+
+  const { data: rawService, isLoading: loading, error } = useDoc<any>(docRef);
 
   useEffect(() => {
-    async function fetchService() {
-      if (!id || !firestore) {
-        setLoading(false);
-        if (!id) notFound();
-        return;
-      };
+    if (error) {
+      console.error('Failed to fetch service:', error);
+      notFound();
+    }
+    if (rawService === null && !loading) {
+      notFound();
+    }
+    if (rawService) {
       try {
-        setLoading(true);
-        const docRef = doc(firestore, 'healthcareServices', id);
-        const docSnap = await getDoc(docRef);
-      
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-
-          // Backward compatibility for old data structure
-          if (!data.vaccinations && data.livestockType) {
-            data.vaccinations = [{
-              vaccineName: data.vaccinationProgram || '',
-              animalType: data.livestockType,
-              animalCount: data.livestockCount || 1,
-            }];
-          }
-
-          if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
-            let status = 'Sembuh';
-            if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
-              status = data.caseDevelopment;
-            }
-            const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
-            data.caseDevelopments = [{
-              status: status,
-              count: totalAnimals,
-            }];
-          }
-
-          const serviceData = serviceSchema.parse({
-            ...data,
-            id: docSnap.id,
-            date: (data.date as Timestamp).toDate(),
-          });
-          setService(serviceData);
-        } else {
-          notFound();
+        const data = { ...rawService };
+         // Backward compatibility for old data structure
+         if (!data.vaccinations && data.livestockType) {
+          data.vaccinations = [{
+            vaccineName: data.vaccinationProgram || '',
+            animalType: data.livestockType,
+            animalCount: data.livestockCount || 1,
+          }];
         }
-      } catch (error) {
-        console.error('Failed to fetch service:', error);
+
+        if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
+          let status = 'Sembuh';
+          if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
+            status = data.caseDevelopment;
+          }
+          const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
+          data.caseDevelopments = [{
+            status: status,
+            count: totalAnimals,
+          }];
+        }
+
+        const serviceData = serviceSchema.parse({
+          ...data,
+          id: rawService.id,
+          date: (data.date as Timestamp).toDate(),
+        });
+        setService(serviceData);
+      } catch (validationError) {
+        console.error('Validation error parsing service data:', validationError);
         notFound();
-      } finally {
-        setLoading(false);
       }
     }
-    fetchService();
-  }, [id, firestore]);
+  }, [rawService, loading, error]);
 
   return (
     <div className="container px-4 sm:px-8 py-4 md:py-8">

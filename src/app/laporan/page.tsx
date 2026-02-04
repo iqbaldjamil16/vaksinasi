@@ -163,7 +163,7 @@ export default function ReportPage() {
           });
           fetchedServices.push(service);
         } catch (e) {
-          console.error('Validation error parsing service data:', e);
+          // console.error('Validation error parsing service data:', e);
         }
       });
       return fetchedServices;
@@ -379,7 +379,7 @@ export default function ReportPage() {
           <TabsContent value="tabel" className="md:pt-4">
             <ServiceTable
               services={filteredServices}
-              loading={loading}
+              loading={loading && services.length === 0}
               highlightedIds={highlightedIds}
               searchTerm={searchTerm}
               onDelete={handleLocalDelete}

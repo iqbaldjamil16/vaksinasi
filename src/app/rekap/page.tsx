@@ -38,9 +38,10 @@ import { Button } from "@/components/ui/button";
 import { Download, CornerUpLeft } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { cn } from "@/lib/utils";
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
-import { useFirebase } from "@/firebase/provider";
+import { collection, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { useFirebase, useMemoFirebase } from "@/firebase/provider";
 import { PasswordDialog } from "@/components/password-dialog";
+import { useCollection } from "@/firebase/firestore/use-collection";
 
 interface RecapData {
     [puskeswan: string]: {
@@ -112,20 +113,17 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 
 export default function RekapPage() {
-    const [services, setServices] = useState<HealthcareService[]>([]);
-    const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
     const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
     const { firestore } = useFirebase();
     const router = useRouter();
 
-    const loadServices = useCallback(async (yearStr: string, monthStr: string) => {
-        if (!firestore) return;
-        setLoading(true);
+    const servicesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
         
-        const year = yearStr === 'all-years' ? null : parseInt(yearStr, 10);
-        const month = monthStr === 'all-months' || monthStr === '' ? null : parseInt(monthStr, 10);
+        const year = selectedYear === 'all-years' ? null : parseInt(selectedYear, 10);
+        const month = selectedMonth === 'all-months' || selectedMonth === '' ? null : parseInt(selectedMonth, 10);
 
         const servicesCollection = collection(firestore, 'healthcareServices');
         const queryConstraints = [orderBy('date', 'desc')];
@@ -142,70 +140,65 @@ export default function RekapPage() {
             queryConstraints.push(where('date', '<=', endDate));
         }
 
-        const q = query(servicesCollection, ...queryConstraints);
+        return query(servicesCollection, ...queryConstraints);
+      }, [firestore, selectedYear, selectedMonth]);
 
-        try {
-          const querySnapshot = await getDocs(q);
-          const fetchedServices: HealthcareService[] = [];
-          querySnapshot.forEach((doc) => {
-              const data = doc.data();
-              try {
-                  if (!data.vaccinations && data.livestockType) {
-                    data.vaccinations = [{
-                        vaccineName: data.vaccinationProgram || '',
-                        animalType: data.livestockType,
-                        animalCount: data.livestockCount || 1,
-                    }];
+    const { data: rawServices, isLoading: loading } = useCollection<any>(servicesQuery);
+
+    const services = useMemo(() => {
+        if (!rawServices) return [];
+        const fetchedServices: HealthcareService[] = [];
+        rawServices.forEach((doc) => {
+            const data = doc;
+            try {
+                if (!data.vaccinations && data.livestockType) {
+                  data.vaccinations = [{
+                      vaccineName: data.vaccinationProgram || '',
+                      animalType: data.livestockType,
+                      animalCount: data.livestockCount || 1,
+                  }];
+                }
+
+                if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
+                  let status = 'Sembuh';
+                  if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
+                    status = data.caseDevelopment;
                   }
+                  const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
+                  data.caseDevelopments = [{
+                    status: status,
+                    count: totalAnimals,
+                  }];
+                }
 
-                  if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
-                    let status = 'Sembuh';
-                    if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
-                      status = data.caseDevelopment;
-                    }
-                    const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
-                    data.caseDevelopments = [{
-                      status: status,
-                      count: totalAnimals,
-                    }];
-                  }
-
-                  const service = serviceSchema.parse({
-                      ...data,
-                      id: doc.id,
-                      date: (data.date as Timestamp).toDate(),
-                  });
-                  fetchedServices.push(service);
-              } catch (e) {
-                  console.error("Validation error parsing service data:", e);
-              }
-          });
-          setServices(fetchedServices);
-        } catch (error) {
-          console.error("Failed to fetch services:", error);
-          setServices([]);
-        } finally {
-            setLoading(false);
-        }
-      }, [firestore]);
-    
-      useEffect(() => {
-        startTransition(() => {
-            loadServices(selectedYear, selectedMonth);
+                const service = serviceSchema.parse({
+                    ...data,
+                    id: doc.id,
+                    date: (data.date as Timestamp).toDate(),
+                });
+                fetchedServices.push(service);
+            } catch (e) {
+                // console.error("Validation error parsing service data:", e);
+            }
         });
-      }, [loadServices, selectedYear, selectedMonth]);
-
+        return fetchedServices;
+      }, [rawServices]);
+    
     const handleMonthChange = (month: string) => {
-        setSelectedMonth(month);
+        startTransition(() => {
+            setSelectedMonth(month);
+        });
     };
 
     const handleYearChange = (year: string) => {
-        setSelectedYear(year);
-         if (year === 'all-years') {
-            setSelectedMonth('all-months');
-        } else if (year !== getYear(new Date()).toString() && selectedMonth === getMonth(new Date()).toString()){
-            setSelectedMonth('all-months');
-        }
+        startTransition(() => {
+            setSelectedYear(year);
+            if (year === 'all-years') {
+                setSelectedMonth('all-months');
+            } else if (year !== getYear(new Date()).toString() && selectedMonth === getMonth(new Date()).toString()){
+                setSelectedMonth('all-months');
+            }
+        });
     };
 
     const recapData = useMemo(() => processRecapData(services), [services]);
@@ -223,7 +216,6 @@ export default function RekapPage() {
             const data = recapData[puskeswan];
             if (!data) continue;
     
-            // Aggregate cases
             if (data.cases) {
                 for (const desa in data.cases) {
                     for (const livestockType in data.cases[desa]) {
@@ -232,7 +224,6 @@ export default function RekapPage() {
                 }
             }
     
-            // Aggregate medicines
             if (data.medicines) {
                 for (const medicineName in data.medicines) {
                     const { count, unit } = data.medicines[medicineName];
@@ -264,8 +255,6 @@ export default function RekapPage() {
             const data = recapData[puskeswan];
             if (!data) return;
 
-            // Rekap Kasus
-            const caseHeader = [{ 'Rekap Kasus Ternak': '' }];
             const caseDataForSheet = Object.entries(data.cases).flatMap(([desa, livestockData]) => {
                 return Object.entries(livestockData).map(([livestockType, count]) => ({
                     'Bulan': monthLabel,
@@ -279,8 +268,6 @@ export default function RekapPage() {
                 return a['Jenis Ternak'].localeCompare(b['Jenis Ternak']);
             });
 
-            // Rekap Obat
-            const medicineHeader = [{ 'Rekap Obat': '' }];
             const medicineDataForSheet = Object.entries(data.medicines)
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([medicineName, { count, unit }]) => ({
@@ -289,24 +276,15 @@ export default function RekapPage() {
                     'Total Dosis': `${formatDosage(count)} ${unit}`,
             }));
             
-            const ws = XLSX.utils.json_to_sheet(caseHeader, { skipHeader: true });
-            XLSX.utils.sheet_add_json(ws, caseDataForSheet, { origin: 'A2' });
-
-            // Add some empty rows for spacing
-            XLSX.utils.sheet_add_json(ws, [{}], { origin: -1, skipHeader: true });
-            XLSX.utils.sheet_add_json(ws, [{}], { origin: -1, skipHeader: true });
-
-            XLSX.utils.sheet_add_json(ws, medicineHeader, { origin: -1, skipHeader: true });
-            XLSX.utils.sheet_add_json(ws, medicineDataForSheet, { origin: -1 });
+            const ws = XLSX.utils.json_to_sheet(caseDataForSheet.length > 0 ? caseDataForSheet : [{}]);
+            XLSX.utils.sheet_add_json(ws, [{}], { origin: -1, skipHeader: true }); // Spacer
+            XLSX.utils.sheet_add_json(ws, medicineDataForSheet.length > 0 ? medicineDataForSheet : [{}], { origin: -1 });
             
-            const sheetName = puskeswan.replace('Puskeswan ', '').replace(/[/\\?*:[\]]/g, ""); // Sanitize sheet name
+            const sheetName = puskeswan.replace('Puskeswan ', '').replace(/[/\\?*:[\]]/g, "");
             XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 31));
         });
 
-        // Add Rekap Total Puskeswan sheet
         if (totalRecapData) {
-            // Total Rekap Kasus
-            const totalCaseHeader = [{ 'Rekap Total Kasus Ternak': '' }];
             const totalCaseDataForSheet = Object.entries(totalRecapData.cases)
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([livestockType, count]) => ({
@@ -315,8 +293,6 @@ export default function RekapPage() {
                     'Jumlah': count,
                 }));
 
-            // Total Rekap Obat
-            const totalMedicineHeader = [{ 'Rekap Total Obat': '' }];
             const totalMedicineDataForSheet = Object.entries(totalRecapData.medicines)
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([medicineName, { count, unit }]) => ({
@@ -325,14 +301,9 @@ export default function RekapPage() {
                     'Total Dosis': `${formatDosage(count)} ${unit}`,
                 }));
 
-            const wsTotal = XLSX.utils.json_to_sheet(totalCaseHeader, { skipHeader: true });
-            XLSX.utils.sheet_add_json(wsTotal, totalCaseDataForSheet, { origin: 'A2' });
-
-            XLSX.utils.sheet_add_json(wsTotal, [{}], { origin: -1, skipHeader: true });
-            XLSX.utils.sheet_add_json(wsTotal, [{}], { origin: -1, skipHeader: true });
-
-            XLSX.utils.sheet_add_json(wsTotal, totalMedicineHeader, { origin: -1, skipHeader: true });
-            XLSX.utils.sheet_add_json(wsTotal, totalMedicineDataForSheet, { origin: -1 });
+            const wsTotal = XLSX.utils.json_to_sheet(totalCaseDataForSheet.length > 0 ? totalCaseDataForSheet : [{}]);
+            XLSX.utils.sheet_add_json(wsTotal, [{}], { origin: -1, skipHeader: true }); // Spacer
+            XLSX.utils.sheet_add_json(wsTotal, totalMedicineDataForSheet.length > 0 ? totalMedicineDataForSheet : [{}], { origin: -1 });
 
             XLSX.utils.book_append_sheet(wb, wsTotal, "Rekap Total");
         }
@@ -378,7 +349,7 @@ export default function RekapPage() {
             {(loading || isPending) && puskeswanList.length === 0 ? (
               <RecapSkeleton />
             ) : puskeswanList.length > 0 ? (
-                 <Accordion type="multiple" className={cn("w-full space-y-4 transition-opacity duration-300", isPending && "opacity-50")}>
+                 <Accordion type="multiple" className={cn("w-full space-y-4 transition-opacity duration-300", (loading || isPending) && "opacity-50")}>
                     {puskeswanList.map(puskeswan => {
                         const data = recapData[puskeswan];
                         const sortedMedicines = Object.entries(data.medicines).sort(([, a], [, b]) => b.count - a.count);

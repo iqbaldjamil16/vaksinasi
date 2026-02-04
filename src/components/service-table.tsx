@@ -122,7 +122,6 @@ function ServiceCard({
           description: 'Data pelayanan berhasil dihapus.',
         });
         onDelete(service.id!);
-        router.refresh();
       } catch (e) {
         toast({
           variant: 'destructive',
@@ -248,7 +247,6 @@ function ActionsCell({
           description: 'Data pelayanan berhasil dihapus.',
         });
         onDelete(service.id!);
-        router.refresh();
       } catch (e) {
         toast({
           variant: 'destructive',
