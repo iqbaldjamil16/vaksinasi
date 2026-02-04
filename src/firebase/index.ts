@@ -3,7 +3,7 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, memoryLocalCache, type Firestore } from 'firebase/firestore'
+import { initializeFirestore, type Firestore, memoryLocalCache } from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -36,9 +36,9 @@ let firestoreInstance: Firestore | null = null;
 
 export function getSdks(firebaseApp: FirebaseApp) {
   if (!firestoreInstance) {
+    // Use memory cache to avoid SSR issues with persistent cache.
     firestoreInstance = initializeFirestore(firebaseApp, {
-      localCache: memoryLocalCache(),
-      experimentalForceLongPolling: true,
+      localCache: memoryLocalCache()
     });
   }
   return {
