@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from 'date-fns/locale';
-import { doc, collection, Timestamp, DocumentReference } from 'firebase/firestore';
+import { doc, collection, Timestamp, setDoc, addDoc } from 'firebase/firestore';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
@@ -35,7 +35,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useFirebase } from "@/firebase/provider";
-import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export function ServiceForm({ initialData, formType }: { initialData?: HealthcareService, formType?: 'keswan' | 'vaksinasi' }) {
@@ -143,36 +142,49 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
 
       if (isEditMode && initialData?.id) {
           const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
-          setDocumentNonBlocking(serviceDocRef, serviceData, { merge: true });
+          await setDoc(serviceDocRef, serviceData, { merge: true });
           toast({
             title: "Sukses",
             description: "Data pelayanan berhasil diperbarui.",
           });
+          router.push('/laporan');
       } else {
           const servicesCollection = collection(firestore, 'healthcareServices');
-          addDocumentNonBlocking(servicesCollection, serviceData)
-            .then(newDocRef => {
-              if (newDocRef) {
-                const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
-                newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
-                localStorage.setItem('newEntries', JSON.stringify(newEntries));
-              }
-            });
+          const newDocRef = await addDoc(servicesCollection, serviceData);
+          
+          const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
+          newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
+          localStorage.setItem('newEntries', JSON.stringify(newEntries));
 
           toast({
               title: "Sukses",
               description: "Data pelayanan berhasil disimpan!",
           });
+
+          // Reset form for next entry, keeping some fields
+          form.reset({
+            ...values, // keep all current values
+            ownerName: "",
+            ownerAddress: "",
+            nik: "",
+            phoneNumber: "",
+            vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1 }],
+            treatments: [],
+            caseDevelopments: formType === 'vaksinasi' ? [] : [{ status: "", count: 1 }],
+          });
+          setShowManualVaccineName([false]);
+          setShowManualOwnerAddress(false);
+          // Do not redirect, stay on page for more entries
       }
-      router.push('/laporan');
     } catch (error) {
-      console.error("Gagal memulai penyimpanan data:", error);
+      console.error("Gagal menyimpan data:", error);
       toast({
         variant: "destructive",
         title: "Gagal Menyimpan",
-        description: "Terjadi kesalahan saat memulai penyimpanan data. Silakan coba lagi.",
+        description: "Terjadi kesalahan saat menyimpan data. Silakan coba lagi.",
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
