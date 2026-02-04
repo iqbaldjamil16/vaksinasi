@@ -32,6 +32,14 @@
           "type": "string",
           "description": "Address of the livestock owner."
         },
+        "nik": {
+          "type": "string",
+          "description": "Owner's National Identity Number (NIK). Optional."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Owner's phone number. Optional."
+        },
         "caseId": {
           "type": "string",
           "description": "ID Kasus iSIKHNAS (Indonesian Animal Health Information System)."

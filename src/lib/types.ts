@@ -22,6 +22,14 @@ export const serviceSchema = z.object({
   officerName: z.string().min(1, "Wajib diisi."),
   ownerName: z.string().min(1, "Wajib diisi."),
   ownerAddress: z.string().min(1, "Wajib diisi."),
+  nik: z.string().optional().refine(
+    (val) => val === undefined || val === '' || /^\d{16}$/.test(val), {
+    message: "NIK harus terdiri dari 16 angka.",
+  }),
+  phoneNumber: z.string().optional().refine(
+    (val) => val === undefined || val === '' || /^(\+62|0)8[1-9][0-9]{7,11}$/.test(val), {
+    message: "Format No. HP tidak valid. Contoh: 081234567890",
+  }),
   caseId: z.string().optional().default('').refine(
     (val) => {
       if (!val) return true; // Allow empty string
