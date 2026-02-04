@@ -44,14 +44,14 @@ import { PasswordDialog } from './password-dialog';
 function ReportSkeleton() {
   return (
     <>
-      {/* Mobile Skeleton is now hidden */}
-      <div className="hidden space-y-4 p-4">
+      {/* Mobile Skeleton */}
+      <div className="space-y-4 p-4 md:hidden">
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>
-      {/* Desktop Skeleton is now always visible */}
-      <div className="rounded-md border">
+      {/* Desktop Skeleton */}
+      <div className="hidden rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -312,8 +312,8 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
     <div
       className={cn('h-full', isPending && 'opacity-50 transition-opacity duration-300')}
     >
-      {/* Mobile View - Hidden */}
-      <div className="hidden h-full overflow-y-auto">
+      {/* Mobile View */}
+      <div className="h-full overflow-y-auto md:hidden">
         {services.length > 0 ? (
           <div className="space-y-4 p-4">
             {services.map((service) => (
@@ -337,8 +337,8 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
         )}
       </div>
 
-      {/* Table View (was Desktop) - Now visible on all screens */}
-      <div className="relative w-full overflow-auto rounded-md border h-[520px]">
+      {/* Table View (Desktop) */}
+      <div className="relative hidden h-[520px] w-full overflow-auto rounded-md border md:block">
         <Table>
           <TableHeader className="sticky top-0 bg-card">
             <TableRow>
