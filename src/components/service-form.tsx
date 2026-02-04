@@ -158,7 +158,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
 
           toast({
               title: "Sukses",
-              description: "Data pelayanan berhasil disimpan. Anda akan diarahkan ke halaman laporan.",
+              description: "Data pelayanan berhasil disimpan.",
           });
           
           router.push('/laporan');
