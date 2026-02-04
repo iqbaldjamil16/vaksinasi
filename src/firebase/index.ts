@@ -3,7 +3,12 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  type Firestore,
+  initializeFirestore,
+  memoryLocalCache,
+} from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -19,8 +24,11 @@ export function initializeFirebase() {
     } catch (e) {
       // Only warn in production because it's normal to use the firebaseConfig to initialize
       // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
+      if (process.env.NODE_ENV === 'production') {
+        console.warn(
+          'Automatic initialization failed. Falling back to firebase config object.',
+          e
+        );
       }
       firebaseApp = initializeApp(firebaseConfig);
     }
@@ -35,10 +43,16 @@ export function initializeFirebase() {
 // This function is now simplified to use getFirestore, which is idempotent
 // and handles initialization correctly on the client-side with persistence.
 export function getSdks(firebaseApp: FirebaseApp) {
+  // Use initializeFirestore for more control, especially for SSR
+  const firestore = initializeFirestore(firebaseApp, {
+    // Use memory cache for SSR to avoid persistence issues on the server
+    localCache: memoryLocalCache(),
+  });
+
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
+    firestore: firestore,
   };
 }
 
