@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from 'date-fns/locale';
-import { doc, updateDoc, addDoc, collection, Timestamp, Firestore } from 'firebase/firestore';
+import { doc, collection, Timestamp, Firestore } from 'firebase/firestore';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { useFirebase } from "@/firebase";
+import { useFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 
 
 export function ServiceForm({ initialData, formType }: { initialData?: HealthcareService, formType?: 'keswan' | 'vaksinasi' }) {
@@ -120,7 +120,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
         return;
     }
 
-    startTransition(async () => {
+    startTransition(() => {
       try {
         const { id, caseDevelopment, ...dataToSave } = values;
         
@@ -131,27 +131,31 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
 
         if (isEditMode && initialData?.id) {
             const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
-            await updateDoc(serviceDocRef, serviceData);
+            updateDocumentNonBlocking(serviceDocRef, serviceData);
             toast({
               title: "Sukses",
-              description: "Data pelayanan berhasil diperbarui!",
+              description: "Data pelayanan sedang diperbarui.",
             });
-            router.push('/laporan');
         } else {
             const servicesCollection = collection(firestore, 'healthcareServices');
-            const newDocRef = await addDoc(servicesCollection, serviceData);
+            const addPromise = addDocumentNonBlocking(servicesCollection, serviceData);
             
-            // Store new ID in localStorage
-            const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
-            newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
-            localStorage.setItem('newEntries', JSON.stringify(newEntries));
+            addPromise.then(newDocRef => {
+              if (newDocRef) {
+                const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
+                newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
+                localStorage.setItem('newEntries', JSON.stringify(newEntries));
+              }
+            }).catch(e => {
+                console.error("Error during non-blocking add for highlighting:", e);
+            });
 
             toast({
                 title: "Sukses",
                 description: "Data pelayanan berhasil disimpan!",
             });
-            router.push('/laporan');
         }
+        router.push('/laporan');
       } catch (error: any) {
         console.error("Submit error:", error);
         toast({
@@ -779,4 +783,5 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     </Form>
   );
 }
+    
     
