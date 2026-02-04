@@ -57,6 +57,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
       ownerAddress: "",
       nik: "",
       phoneNumber: "",
+      vaccinationProgram: "",
       vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1 }],
       treatments: [],
       caseDevelopments: formType === 'vaksinasi' ? [] : [{ status: "", count: 1 }],
@@ -379,6 +380,35 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
               </CardContent>
             </Card>
              <Card>
+                <CardContent className="p-4">
+                  <FormField
+                    control={form.control}
+                    name="vaccinationProgram"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Program Vaksinasi</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih Program Vaksinasi" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {vaccinationPrograms.map((program) => (
+                              <SelectItem key={program} value={program}>{program}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+             <Card>
               <CardContent className="p-4">
                 <div className="space-y-4">
                   <div>
@@ -409,20 +439,9 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Jenis Vaksin</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Pilih Jenis Vaksin" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {vaccinationPrograms.map((program) => (
-                                    <SelectItem key={program} value={program}>
-                                      {program}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <Input placeholder="Isi jenis vaksin" {...field} />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}

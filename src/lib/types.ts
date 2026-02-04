@@ -38,6 +38,8 @@ export const serviceSchema = z.object({
     message: "Format No. HP tidak valid. Contoh: 081234567890",
   }),
   
+  vaccinationProgram: z.string().min(1, "Program vaksinasi wajib diisi."),
+  
   vaccinations: z.array(vaccinationDetailSchema).min(1, "Minimal satu detail vaksinasi harus ditambahkan."),
   
   treatments: z.array(treatmentSchema).optional().default([]),
@@ -45,7 +47,6 @@ export const serviceSchema = z.object({
   caseDevelopments: z.array(caseDevelopmentEntrySchema).optional(),
   
   // Legacy fields for backward compatibility
-  vaccinationProgram: z.string().optional(),
   livestockType: z.string().optional(),
   livestockCount: z.coerce.number().optional(),
   caseDevelopment: z.string().optional(),

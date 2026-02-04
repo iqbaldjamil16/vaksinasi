@@ -41,16 +41,39 @@
           "description": "Owner's phone number. Optional."
         },
         "vaccinationProgram": {
-            "type": "string",
-            "description": "The vaccination program for the service. Optional."
+          "type": "string",
+          "description": "The vaccination program for the service."
         },
         "livestockType": {
           "type": "string",
-          "description": "Type of livestock."
+          "description": "Type of livestock. (Legacy)"
         },
         "livestockCount": {
           "type": "number",
-          "description": "Number of livestock affected."
+          "description": "Number of livestock affected. (Legacy)"
+        },
+        "vaccinations": {
+          "type": "array",
+          "description": "Details of vaccinations given.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "vaccineName": {
+                "type": "string"
+              },
+              "animalType": {
+                "type": "string"
+              },
+              "animalCount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "vaccineName",
+              "animalType",
+              "animalCount"
+            ]
+          }
         },
         "treatments": {
           "type": "array",
@@ -77,6 +100,25 @@
               "dosageUnit"
             ]
           }
+        },
+        "caseDevelopments": {
+          "type": "array",
+          "description": "Details about the case development status.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "count": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "status",
+              "count"
+            ]
+          }
         }
       },
       "required": [
@@ -85,9 +127,8 @@
         "officerName",
         "ownerName",
         "ownerAddress",
-        "livestockType",
-        "livestockCount",
-        "treatments"
+        "vaccinationProgram",
+        "vaccinations"
       ]
     }
   },
