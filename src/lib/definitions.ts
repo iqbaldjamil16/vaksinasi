@@ -216,6 +216,16 @@ export const vaccinationPrograms = [
     'Lainnya',
   ];
 
+export const vaccineLists: Record<string, string[]> = {
+    'Rabies': ['Neo Rabivet', 'Rabisin', 'Lainnya'],
+    'Jembrana': ['JD-Vet', 'Lainnya'],
+    'Hog Cholera': ['Himmvac Hog Cholera', 'Lainnya'],
+    'PMK (Penyakit Mulut dan Kuku)': ['Aphthovet', 'Lainnya'],
+    'ASF (African Swine Fever)': ['Serum ASF', 'Lainnya'],
+    'AI (Avian Influenza)': ['Medivac AI', 'Lainnya'],
+    'ND (Newcastle Disease)': ['Medivac ND', 'Lainnya'],
+};
+
 export const medicineData = {
   Antibiotik: [
     'Colibact Bolus',

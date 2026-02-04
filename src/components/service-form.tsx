@@ -12,7 +12,7 @@ import { doc, collection, Timestamp, Firestore } from 'firebase/firestore';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
-import { medicineData, medicineTypes, type MedicineType, livestockTypes, puskeswanList, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions, vaccinationPrograms } from "@/lib/definitions";
+import { medicineData, medicineTypes, type MedicineType, livestockTypes, puskeswanList, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions, vaccinationPrograms, vaccineLists } from "@/lib/definitions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,7 +79,16 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     name: "vaccinations",
   });
 
+  const [showManualVaccineName, setShowManualVaccineName] = useState<boolean[]>(
+    initialData?.vaccinations.map(v => {
+      const program = initialData.vaccinationProgram || '';
+      const list = vaccineLists[program] || [];
+      return !list.includes(v.vaccineName);
+    }) || []
+  );
+
   const watchedPuskeswan = form.watch("puskeswan");
+  const watchedVaccinationProgram = form.watch("vaccinationProgram");
   const watchedTreatments = form.watch("treatments");
 
   const officerListMap: Record<string, string[]> = {
@@ -388,7 +397,13 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                       <FormItem>
                         <FormLabel>Program Vaksinasi</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.getValues('vaccinations').forEach((_, index) => {
+                              form.setValue(`vaccinations.${index}.vaccineName`, '');
+                            });
+                            setShowManualVaccineName(form.getValues('vaccinations').map(() => false));
+                          }}
                           value={field.value}
                         >
                           <FormControl>
@@ -419,7 +434,11 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                       </span>
                     </Label>
                   </div>
-                  {vaccinationFields.map((item, index) => (
+                  {vaccinationFields.map((item, index) => {
+                    const vaccineOptions = vaccineLists[watchedVaccinationProgram] || [];
+                    const isManualInput = showManualVaccineName[index] || watchedVaccinationProgram === 'Lainnya' || vaccineOptions.length === 0;
+
+                    return (
                     <Card key={item.id} className="relative p-4 bg-card">
                       {vaccinationFields.length > 1 && (
                         <Button
@@ -434,17 +453,47 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                       )}
                       <div className="grid grid-cols-1 gap-4">
                         <FormField
-                          control={form.control}
-                          name={`vaccinations.${index}.vaccineName`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Jenis Vaksin</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Isi jenis vaksin" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                            control={form.control}
+                            name={`vaccinations.${index}.vaccineName`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Jenis Vaksin</FormLabel>
+                                    {isManualInput ? (
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Isi jenis vaksin"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                    ) : (
+                                        <Select
+                                            onValueChange={(value) => {
+                                                if (value === 'Lainnya') {
+                                                    const newShowManual = [...showManualVaccineName];
+                                                    newShowManual[index] = true;
+                                                    setShowManualVaccineName(newShowManual);
+                                                    field.onChange('');
+                                                } else {
+                                                    field.onChange(value);
+                                                }
+                                            }}
+                                            value={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Pilih Jenis Vaksin" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {vaccineOptions.map((vaccine) => (
+                                                    <SelectItem key={vaccine} value={vaccine}>{vaccine}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
                         <div className="grid grid-cols-2 gap-2">
                            <FormField
@@ -490,14 +539,17 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                         </div>
                       </div>
                     </Card>
-                  ))}
+                  )})}
                   <div className="flex justify-start">
                     <Button
                       type="button"
                       variant="default"
                       size="sm"
                       className="bg-accent text-accent-foreground hover:bg-accent/90"
-                      onClick={() => appendVaccination({ vaccineName: '', animalType: '', animalCount: 1 })}
+                      onClick={() => {
+                        appendVaccination({ vaccineName: '', animalType: '', animalCount: 1 });
+                        setShowManualVaccineName([...showManualVaccineName, false]);
+                      }}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Tambah
