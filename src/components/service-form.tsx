@@ -12,7 +12,7 @@ import { doc, collection, Timestamp, setDoc, addDoc, writeBatch } from 'firebase
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
-import { medicineData, medicineTypes, type MedicineType, livestockTypes, puskeswanList, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions, vaccinationPrograms, vaccineLists } from "@/lib/definitions";
+import { livestockTypes, puskeswanList, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions, vaccinationPrograms, vaccineLists } from "@/lib/definitions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -567,19 +567,14 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                         <Label>
                         Pengobatan
                         <span className="ml-2 text-xs italic font-normal text-muted-foreground">
-                            (Pilih Lainnya Jika Jenis Obat &amp; Nama Obat Tidak Tercantum)
+                            (Isi jenis dan nama obat secara manual)
                         </span>
                         </Label>
                     </div>
 
                     {treatmentFields.map((item, index) => {
-                        const selectedMedicineType = watchedTreatments?.[index]?.medicineType as MedicineType;
-                        const medicineNameValue = form.watch(`treatments.${index}.medicineName`);
-                        const isManualMedicineName = medicineNameValue === 'Lainnya';
                         const dosageUnitValue = form.watch(`treatments.${index}.dosageUnit`);
                         const isManualDosageUnit = dosageUnitValue === 'Lainnya';
-
-                        const isMedicineTypeLainnya = selectedMedicineType === 'Lainnya';
 
                         return (
                         <Card key={item.id} className="relative p-4 bg-card">
@@ -601,24 +596,9 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                                 render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Jenis Obat</FormLabel>
-                                    <Select
-                                    onValueChange={(value) => {
-                                        field.onChange(value);
-                                        form.setValue(`treatments.${index}.medicineName`, '');
-                                    }}
-                                    defaultValue={field.value}
-                                    >
                                     <FormControl>
-                                        <SelectTrigger>
-                                        <SelectValue placeholder="Pilih Jenis" />
-                                        </SelectTrigger>
+                                      <Input placeholder="Contoh: Antibiotik" {...field} />
                                     </FormControl>
-                                    <SelectContent>
-                                        {medicineTypes.map((type) => (
-                                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                                 )}
@@ -629,43 +609,9 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
                                 render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Nama Obat</FormLabel>
-                                    {isMedicineTypeLainnya || isManualMedicineName ? (
                                     <FormControl>
-                                        <Input
-                                            placeholder="Masukkan nama obat"
-                                            {...field}
-                                            value={field.value === 'Lainnya' ? '' : field.value}
-                                            onChange={(e) => field.onChange(e.target.value)}
-                                        />
-                                        </FormControl>
-                                    ) : (
-                                    <Select
-                                        onValueChange={(value) => {
-                                        field.onChange(value);
-                                        }}
-                                        value={field.value}
-                                        disabled={!selectedMedicineType}
-                                    >
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih Obat" />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                        {selectedMedicineType && medicineData[selectedMedicineType] ? (
-                                            medicineData[selectedMedicineType].map((drug) => (
-                                            <SelectItem key={drug} value={drug}>
-                                                {drug}
-                                            </SelectItem>
-                                            ))
-                                        ) : (
-                                            <SelectItem value="-" disabled>
-                                            Pilih jenis dahulu
-                                            </SelectItem>
-                                        )}
-                                        </SelectContent>
-                                    </Select>
-                                    )}
+                                        <Input placeholder="Contoh: Limoxin" {...field} />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                                 )}
@@ -857,3 +803,4 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     
 
     
+
