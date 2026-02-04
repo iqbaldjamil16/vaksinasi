@@ -42,7 +42,7 @@ export const serviceSchema = z.object({
   
   treatments: z.array(treatmentSchema).optional().default([]),
   
-  caseDevelopments: z.array(caseDevelopmentEntrySchema).min(1, "Minimal satu perkembangan kasus wajib ditambahkan.").optional(),
+  caseDevelopments: z.array(caseDevelopmentEntrySchema).optional(),
   
   // Legacy fields for backward compatibility
   vaccinationProgram: z.string().optional(),
