@@ -247,7 +247,7 @@ export default function ReportPage() {
       });
 
       const allDataForSheet: any[] = [];
-      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Vaksin', 'Obat yang Digunakan', 'Dosis', 'Perkembangan Kasus'];
+      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Vaksin'];
       const officerNames = Object.keys(servicesByOfficer).sort();
 
       officerNames.forEach(officerName => {
@@ -256,11 +256,6 @@ export default function ReportPage() {
         allDataForSheet.push({ 'Nama Petugas': officerName });
         allDataForSheet.push(Object.fromEntries(headers.map(h => [h, h])));
         const data = servicesByOfficer[officerName].map((service) => {
-          const caseDevelopmentText = (service.caseDevelopments || [])
-              .filter(dev => dev.status && dev.count > 0)
-              .map(dev => `${dev.status} (${dev.count})`)
-              .join(', ');
-
           const animalDetails = service.vaccinations.map(v => v.animalType).join(', ');
           const animalCounts = service.vaccinations.map(v => v.animalCount).join(', ');
           const vaccineNames = service.vaccinations.map(v => v.vaccineName).join(', ');
@@ -272,9 +267,6 @@ export default function ReportPage() {
             'Jenis Ternak': animalDetails,
             'Jumlah': animalCounts,
             'Vaksin': vaccineNames,
-            'Obat yang Digunakan': service.treatments.map((t) => t.medicineName).join(', '),
-            'Dosis': service.treatments.map((t) => `${t.dosageValue} ${t.dosageUnit}`).join(', '),
-            'Perkembangan Kasus': caseDevelopmentText,
           };
         });
         allDataForSheet.push(...data);
@@ -314,7 +306,7 @@ export default function ReportPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1">
               <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-                Laporan Pelayanan
+                Data Vaksinasi
               </CardTitle>
               <CardDescription className="mt-1 text-sm md:text-base">
                 Cari, lihat, dan unduh semua data pelayanan yang telah
@@ -456,4 +448,3 @@ export default function ReportPage() {
     
 
     
-
