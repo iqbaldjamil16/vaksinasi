@@ -9,18 +9,29 @@ import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useFirebase } from '@/firebase/provider';
-import { collection, getDocs, query, where, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp, orderBy, Query, DocumentData } from 'firebase/firestore';
 import { type HealthcareService, serviceSchema } from '@/lib/types';
 import { format, getMonth, getYear, subYears, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const years = Array.from({ length: 5 }, (_, i) => getYear(subYears(new Date(), i)).toString());
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i.toString(),
   label: new Date(0, i).toLocaleString('id-ID', { month: 'long' })
 }));
+
+// Helper interface to access internal query properties for error reporting
+interface InternalQuery extends Query<DocumentData> {
+  _query: {
+    path: {
+      canonicalString(): string;
+    }
+  }
+}
 
 export default function DocsPage() {
   const router = useRouter();
@@ -30,182 +41,183 @@ export default function DocsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
   const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
 
-  const handleGeneratePdf = async () => {
+  const handleGeneratePdf = () => {
     if (!firestore) {
         toast({ variant: 'destructive', title: 'Error', description: 'Koneksi Firestore tidak tersedia.' });
         return;
     }
     setIsGenerating(true);
 
-    try {
-        const servicesCollection = collection(firestore, 'healthcareServices');
-        
-        const year = selectedYear === 'all-years' ? null : parseInt(selectedYear, 10);
-        const month = selectedMonth === 'all-months' ? null : parseInt(selectedMonth, 10);
+    const servicesCollection = collection(firestore, 'healthcareServices');
+    
+    const year = selectedYear === 'all-years' ? null : parseInt(selectedYear, 10);
+    const month = selectedMonth === 'all-months' ? null : parseInt(selectedMonth, 10);
 
-        const queryConstraints: any[] = [orderBy('date', 'asc')];
+    const queryConstraints: any[] = [orderBy('date', 'asc')];
 
-        if (year !== null && month !== null) {
-            const startDate = startOfMonth(new Date(year, month));
-            const endDate = endOfMonth(new Date(year, month));
-            queryConstraints.push(where('date', '>=', startDate));
-            queryConstraints.push(where('date', '<=', endDate));
-        } else if (year !== null) {
-            const startDate = new Date(year, 0, 1);
-            const endDate = new Date(year, 11, 31, 23, 59, 59);
-            queryConstraints.push(where('date', '>=', startDate));
-            queryConstraints.push(where('date', '<=', endDate));
-        }
+    if (year !== null && month !== null) {
+        const startDate = startOfMonth(new Date(year, month));
+        const endDate = endOfMonth(new Date(year, month));
+        queryConstraints.push(where('date', '>=', startDate));
+        queryConstraints.push(where('date', '<=', endDate));
+    } else if (year !== null) {
+        const startDate = new Date(year, 0, 1);
+        const endDate = new Date(year, 11, 31, 23, 59, 59);
+        queryConstraints.push(where('date', '>=', startDate));
+        queryConstraints.push(where('date', '<=', endDate));
+    }
 
-        const q = query(servicesCollection, ...queryConstraints);
-        const querySnapshot = await getDocs(q);
-
-        let allServices: HealthcareService[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-             try {
-                if (!data.vaccinations && data.livestockType) {
-                    data.vaccinations = [{
-                    vaccineName: data.vaccinationProgram || '',
-                    animalType: data.livestockType,
-                    animalCount: data.livestockCount || 1,
-                    }];
-                }
-
-                if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
-                  let status = 'Sembuh';
-                  if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
-                    status = data.caseDevelopment;
-                  }
-                   const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
-                  data.caseDevelopments = [{
-                    status: status,
-                    count: totalAnimals,
+    const q = query(servicesCollection, ...queryConstraints);
+    
+    getDocs(q).then(querySnapshot => {
+      let allServices: HealthcareService[] = [];
+      querySnapshot.forEach((doc) => {
+          const data = doc.data();
+           try {
+              if (!data.vaccinations && data.livestockType) {
+                  data.vaccinations = [{
+                  vaccineName: data.vaccinationProgram || '',
+                  animalType: data.livestockType,
+                  animalCount: data.livestockCount || 1,
                   }];
-                }
+              }
 
-                const service = serviceSchema.parse({
-                    ...data,
-                    id: doc.id,
-                    date: (data.date as Timestamp).toDate(),
-                });
-                allServices.push(service);
-            } catch (e) {
-                console.error("Validation error parsing service data for PDF:", e, data);
+              if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
+                let status = 'Sembuh';
+                if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
+                  status = data.caseDevelopment;
+                }
+                 const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
+                data.caseDevelopments = [{
+                  status: status,
+                  count: totalAnimals,
+                }];
+              }
+
+              const service = serviceSchema.parse({
+                  ...data,
+                  id: doc.id,
+                  date: (data.date as Timestamp).toDate(),
+              });
+              allServices.push(service);
+          } catch (e) {
+              console.error("Validation error parsing service data for PDF:", e, data);
+          }
+      });
+      
+      const services = allServices.filter(s => s.officerName === 'drh. Iqbal Djamil');
+
+      if (services.length === 0) {
+          toast({ title: 'Info', description: 'Tidak ada data pelayanan untuk drh. Muhammad Iqbal Djamil pada periode yang dipilih.' });
+          setIsGenerating(false);
+          return;
+      }
+
+      const doc = new jsPDF({ orientation: 'landscape' });
+      
+      const pageWidth = doc.internal.pageSize.getWidth();
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text('Laporan Pelayanan Kesehatan Hewan', pageWidth / 2, 22, { align: 'center' });
+      
+      doc.setFontSize(11);
+      
+      const labelX = 14;
+      const colonX = 45;
+      const valueX = 47;
+      let currentY = 30;
+      const lineHeight = 6;
+      
+      doc.setFont(undefined, 'normal');
+      doc.text('Petugas', labelX, currentY);
+      doc.text(':', colonX, currentY);
+      doc.setFont(undefined, 'bold');
+      doc.text('drh. Muhammad Iqbal Djamil', valueX, currentY);
+      doc.setFont(undefined, 'normal');
+      currentY += lineHeight;
+      
+      doc.text('Kecamatan', labelX, currentY);
+      doc.text(':', colonX, currentY);
+      doc.text('Topoyo', valueX, currentY);
+      currentY += lineHeight;
+
+      const monthLabelText = months.find(m => m.value === selectedMonth)?.label || 'Semua Bulan';
+      const yearLabelText = selectedYear === 'all-years' ? 'Semua Tahun' : selectedYear;
+      let periodLabel;
+      if (selectedYear === 'all-years') {
+          periodLabel = 'Semua Periode';
+      } else if (selectedMonth === 'all-months') {
+          periodLabel = yearLabelText;
+      } else {
+          periodLabel = `${monthLabelText} ${yearLabelText}`;
+      }
+      doc.text('Bulan', labelX, currentY);
+      doc.text(':', colonX, currentY);
+      doc.text(periodLabel, valueX, currentY);
+
+      if (services.length > 0) {
+        const tableColumn = ["No.", "Tanggal", "Puskeswan", "Pemilik", "Alamat", "Jenis Hewan", "Pengobatan", "Perkembangan Kasus"];
+        const tableRows: any[][] = [];
+
+        services.forEach((service, index) => {
+            const treatments = service.treatments.map(t => `${t.medicineName} (${t.dosageValue} ${t.dosageUnit})`).join('\n');
+            const caseDevelopmentText = (service.caseDevelopments || [])
+              .filter(dev => dev.status && dev.count > 0)
+              .map(dev => `${dev.status} (${dev.count})`)
+              .join(', ');
+            const animalDetails = service.vaccinations.map(v => `${v.animalType} (${v.animalCount})`).join('\n');
+
+            const serviceData = [
+                index + 1,
+                format(new Date(service.date), 'dd-MM-yyyy', { locale: id }),
+                service.puskeswan,
+                service.ownerName,
+                service.ownerAddress,
+                animalDetails,
+                treatments,
+                caseDevelopmentText,
+            ];
+            tableRows.push(serviceData);
+        });
+        
+        const totalLivestock = services.reduce((sum, service) => sum + service.vaccinations.reduce((s, v) => s + v.animalCount, 0), 0);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: currentY + 5,
+            styles: { fontSize: 8, cellPadding: 2, textColor: [0, 0, 0], valign: 'middle' },
+            headStyles: { fillColor: [38, 89, 43], textColor: [255, 255, 255], fontSize: 9, halign: 'center', valign: 'middle' },
+            columnStyles: {
+              0: { halign: 'center' },
             }
         });
         
-        const services = allServices.filter(s => s.officerName === 'drh. Iqbal Djamil');
-
-        if (services.length === 0) {
-            toast({ title: 'Info', description: 'Tidak ada data pelayanan untuk drh. Muhammad Iqbal Djamil pada periode yang dipilih.' });
-            setIsGenerating(false);
-            return;
-        }
-
-        const doc = new jsPDF({ orientation: 'landscape' });
-        
-        const pageWidth = doc.internal.pageSize.getWidth();
-        doc.setFontSize(18);
+        const finalY = (doc as any).lastAutoTable.finalY;
+        const totalText = `Total Data: ${services.length} - Total Pelayanan Keswan: ${totalLivestock} Ekor`;
+        doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
-        doc.text('Laporan Pelayanan Kesehatan Hewan', pageWidth / 2, 22, { align: 'center' });
-        
+        doc.text(totalText, 14, finalY + 10);
+        doc.setFont(undefined, 'normal');
+
+      } else {
         doc.setFontSize(11);
-        
-        const labelX = 14;
-        const colonX = 45;
-        const valueX = 47;
-        let currentY = 30;
-        const lineHeight = 6;
-        
-        // Petugas
-        doc.setFont(undefined, 'normal');
-        doc.text('Petugas', labelX, currentY);
-        doc.text(':', colonX, currentY);
-        doc.setFont(undefined, 'bold');
-        doc.text('drh. Muhammad Iqbal Djamil', valueX, currentY);
-        doc.setFont(undefined, 'normal');
-        currentY += lineHeight;
-        
-        // Kecamatan
-        doc.text('Kecamatan', labelX, currentY);
-        doc.text(':', colonX, currentY);
-        doc.text('Topoyo', valueX, currentY);
-        currentY += lineHeight;
+        doc.text('Tidak ada data pelayanan tabel untuk periode ini.', 14, 50);
+      }
 
-        // Bulan
-        const monthLabelText = months.find(m => m.value === selectedMonth)?.label || 'Semua Bulan';
-        const yearLabelText = selectedYear === 'all-years' ? 'Semua Tahun' : selectedYear;
-        let periodLabel;
-        if (selectedYear === 'all-years') {
-            periodLabel = 'Semua Periode';
-        } else if (selectedMonth === 'all-months') {
-            periodLabel = yearLabelText;
-        } else {
-            periodLabel = `${monthLabelText} ${yearLabelText}`;
-        }
-        doc.text('Bulan', labelX, currentY);
-        doc.text(':', colonX, currentY);
-        doc.text(periodLabel, valueX, currentY);
+      doc.save(`laporan-drh-muhammad-iqbal-djamil-${periodLabel.replace(/\s/g, '_')}.pdf`);
+      setIsGenerating(false);
 
-        if (services.length > 0) {
-          const tableColumn = ["No.", "Tanggal", "Puskeswan", "Pemilik", "Alamat", "Jenis Hewan", "Pengobatan", "Perkembangan Kasus"];
-          const tableRows: any[][] = [];
-
-          services.forEach((service, index) => {
-              const treatments = service.treatments.map(t => `${t.medicineName} (${t.dosageValue} ${t.dosageUnit})`).join('\n');
-              const caseDevelopmentText = (service.caseDevelopments || [])
-                .filter(dev => dev.status && dev.count > 0)
-                .map(dev => `${dev.status} (${dev.count})`)
-                .join(', ');
-              const animalDetails = service.vaccinations.map(v => `${v.animalType} (${v.animalCount})`).join('\n');
-
-              const serviceData = [
-                  index + 1,
-                  format(new Date(service.date), 'dd-MM-yyyy', { locale: id }),
-                  service.puskeswan,
-                  service.ownerName,
-                  service.ownerAddress,
-                  animalDetails,
-                  treatments,
-                  caseDevelopmentText,
-              ];
-              tableRows.push(serviceData);
-          });
-          
-          const totalLivestock = services.reduce((sum, service) => sum + service.vaccinations.reduce((s, v) => s + v.animalCount, 0), 0);
-
-          autoTable(doc, {
-              head: [tableColumn],
-              body: tableRows,
-              startY: currentY + 5,
-              styles: { fontSize: 8, cellPadding: 2, textColor: [0, 0, 0], valign: 'middle' },
-              headStyles: { fillColor: [38, 89, 43], textColor: [255, 255, 255], fontSize: 9, halign: 'center', valign: 'middle' },
-              columnStyles: {
-                0: { halign: 'center' },
-              }
-          });
-          
-          const finalY = (doc as any).lastAutoTable.finalY;
-          const totalText = `Total Data: ${services.length} - Total Pelayanan Keswan: ${totalLivestock} Ekor`;
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'bold');
-          doc.text(totalText, 14, finalY + 10);
-          doc.setFont(undefined, 'normal');
-
-        } else {
-          doc.setFontSize(11);
-          doc.text('Tidak ada data pelayanan tabel untuk periode ini.', 14, 50);
-        }
-
-        doc.save(`laporan-drh-muhammad-iqbal-djamil-${periodLabel.replace(/\s/g, '_')}.pdf`);
-
-    } catch (error) {
-        console.error("Gagal membuat PDF: ", error);
+    }).catch(error => {
+        const queryPath = (q as unknown as InternalQuery)._query.path.canonicalString();
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: queryPath,
+          operation: 'list'
+        }));
         toast({ variant: 'destructive', title: 'Gagal', description: 'Terjadi kesalahan saat membuat PDF.' });
-    } finally {
+    }).finally(() => {
         setIsGenerating(false);
-    }
+    });
   };
 
   return (

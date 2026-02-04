@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, Suspense } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -41,6 +41,8 @@ import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase/provider';
 import { PasswordDialog } from './password-dialog';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function ReportSkeleton() {
   return (
@@ -113,22 +115,27 @@ function ServiceCard({
 
   const handleDelete = () => {
     if (!firestore || !service.id) return;
-    startDeleteTransition(async () => {
-      try {
-        const serviceDoc = doc(firestore, 'healthcareServices', service.id);
-        await deleteDoc(serviceDoc);
-        toast({
-          title: 'Sukses',
-          description: 'Data pelayanan berhasil dihapus.',
+    startDeleteTransition(() => {
+      const serviceDoc = doc(firestore, 'healthcareServices', service.id!);
+      deleteDoc(serviceDoc)
+        .then(() => {
+          toast({
+            title: 'Sukses',
+            description: 'Data pelayanan berhasil dihapus.',
+          });
+          onDelete(service.id!);
+        })
+        .catch(() => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: serviceDoc.path,
+            operation: 'delete'
+          }));
+          toast({
+            variant: 'destructive',
+            title: 'Gagal',
+            description: 'Gagal menghapus data.',
+          });
         });
-        onDelete(service.id!);
-      } catch (e) {
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Gagal menghapus data.',
-        });
-      }
     });
   };
 
@@ -238,22 +245,27 @@ function ActionsCell({
 
   const handleDelete = () => {
     if (!firestore || !service.id) return;
-    startDeleteTransition(async () => {
-      try {
-        const serviceDoc = doc(firestore, 'healthcareServices', service.id);
-        await deleteDoc(serviceDoc);
-        toast({
-          title: 'Sukses',
-          description: 'Data pelayanan berhasil dihapus.',
+    startDeleteTransition(() => {
+      const serviceDoc = doc(firestore, 'healthcareServices', service.id!);
+      deleteDoc(serviceDoc)
+        .then(() => {
+          toast({
+            title: 'Sukses',
+            description: 'Data pelayanan berhasil dihapus.',
+          });
+          onDelete(service.id!);
+        })
+        .catch(() => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: serviceDoc.path,
+            operation: 'delete'
+          }));
+          toast({
+            variant: 'destructive',
+            title: 'Gagal',
+            description: 'Gagal menghapus data.',
+          });
         });
-        onDelete(service.id!);
-      } catch (e) {
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Gagal menghapus data.',
-        });
-      }
     });
   };
 

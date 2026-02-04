@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from 'date-fns/locale';
-import { doc, collection, Timestamp, setDoc, addDoc, writeBatch } from 'firebase/firestore';
+import { doc, collection, Timestamp, setDoc } from 'firebase/firestore';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
@@ -35,6 +35,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useFirebase } from "@/firebase/provider";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 
 export function ServiceForm({ initialData, formType }: { initialData?: HealthcareService, formType?: 'keswan' | 'vaksinasi' }) {
@@ -120,7 +122,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     initialData ? isDesaSelection && !desaList.includes(initialData.ownerAddress) : false
   );
 
-  async function onSubmit(values: HealthcareService) {
+  function onSubmit(values: HealthcareService) {
     if (!firestore) {
         toast({
           variant: "destructive",
@@ -132,46 +134,68 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     
     setIsSubmitting(true);
 
-    try {
-      const { id, caseDevelopment, ...dataToSave } = values;
-      
-      const serviceData = {
-        ...dataToSave,
-        date: Timestamp.fromDate(values.date),
-      };
+    const { id, caseDevelopment, ...dataToSave } = values;
+    
+    const serviceData = {
+      ...dataToSave,
+      date: Timestamp.fromDate(values.date),
+    };
 
-      if (isEditMode && initialData?.id) {
-          const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
-          await setDoc(serviceDocRef, serviceData, { merge: true });
-          toast({
-            title: "Sukses",
-            description: "Data pelayanan berhasil diperbarui. Mengarahkan...",
-          });
-          router.push('/laporan');
-      } else {
-          const newDocRef = doc(collection(firestore, 'healthcareServices'));
-          await setDoc(newDocRef, serviceData);
-          
-          const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
-          newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
-          localStorage.setItem('newEntries', JSON.stringify(newEntries));
-
-          toast({
+    if (isEditMode && initialData?.id) {
+        const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
+        setDoc(serviceDocRef, serviceData, { merge: true })
+          .then(() => {
+            toast({
               title: "Sukses",
-              description: "Data pelayanan berhasil disimpan.",
+              description: "Data pelayanan berhasil diperbarui. Mengarahkan...",
+            });
+            router.push('/laporan');
+          })
+          .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: serviceDocRef.path,
+              operation: 'update',
+              requestResourceData: serviceData,
+            }));
+            toast({
+              variant: "destructive",
+              title: "Gagal Memperbarui",
+              description: "Terjadi kesalahan saat memperbarui data. Periksa kembali isian Anda.",
+            });
+          })
+          .finally(() => {
+            setIsSubmitting(false);
           });
-          
-          router.push('/laporan');
-      }
-    } catch (error) {
-      console.error("Gagal menyimpan data:", error);
-      toast({
-        variant: "destructive",
-        title: "Gagal Menyimpan",
-        description: "Terjadi kesalahan saat menyimpan data. Silakan coba lagi.",
-      });
-    } finally {
-        setIsSubmitting(false);
+    } else {
+        const newDocRef = doc(collection(firestore, 'healthcareServices'));
+        setDoc(newDocRef, serviceData)
+          .then(() => {
+            const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
+            newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
+            localStorage.setItem('newEntries', JSON.stringify(newEntries));
+
+            toast({
+                title: "Sukses",
+                description: "Data pelayanan berhasil disimpan.",
+            });
+            
+            router.push('/laporan');
+          })
+          .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: newDocRef.path,
+              operation: 'create',
+              requestResourceData: serviceData,
+            }));
+            toast({
+              variant: "destructive",
+              title: "Gagal Menyimpan",
+              description: "Terjadi kesalahan saat menyimpan data. Silakan coba lagi.",
+            });
+          })
+          .finally(() => {
+            setIsSubmitting(false);
+          });
     }
   }
 
@@ -803,4 +827,3 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     
 
     
-
