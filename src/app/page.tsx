@@ -35,9 +35,9 @@ export default function Home() {
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardHeader>
-              <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Pelayanan Kesehatan Hewan</CardTitle>
+              <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Pelayanan Vaksinasi</CardTitle>
               <CardDescription className="text-muted-foreground pt-2 text-sm md:text-base">
-              Input detail pelayanan yang telah dilakukan
+              Input detail vaksinasi yang telah dilakukan
               </CardDescription>
               <div className="flex items-center gap-2">
                   <a href={linkToCopy} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 italic underline text-sm">
