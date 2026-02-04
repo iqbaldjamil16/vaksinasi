@@ -34,7 +34,7 @@ import { Download, CornerUpLeft } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { cn } from "@/lib/utils";
 import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
-import { useFirebase } from "@/firebase";
+import { useFirebase } from "@/firebase/provider";
 import { PasswordDialog } from "@/components/password-dialog";
 import { ServiceTable } from "@/components/service-table";
 import { Input } from "@/components/ui/input";

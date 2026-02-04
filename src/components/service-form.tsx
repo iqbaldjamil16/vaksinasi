@@ -34,7 +34,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { useFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
+import { useFirebase } from "@/firebase/provider";
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export function ServiceForm({ initialData, formType }: { initialData?: HealthcareService, formType?: 'keswan' | 'vaksinasi' }) {

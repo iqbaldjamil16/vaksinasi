@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, Suspense } from 'react';
@@ -38,7 +39,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
 import { PasswordDialog } from './password-dialog';
 
 function ReportSkeleton() {
@@ -338,7 +339,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
       </div>
 
       {/* Table View (Desktop) */}
-      <div className="relative hidden h-[520px] w-full overflow-auto rounded-md border md:block">
+      <div className="relative hidden max-h-[520px] w-full overflow-auto rounded-md border md:block">
         <Table>
           <TableHeader className="sticky top-0 bg-card">
             <TableRow>

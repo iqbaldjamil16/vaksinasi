@@ -8,7 +8,7 @@ import { CornerUpLeft, Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
 import { collection, getDocs, query, where, Timestamp, orderBy } from 'firebase/firestore';
 import { type HealthcareService, serviceSchema } from '@/lib/types';
 import { format, getMonth, getYear, subYears, startOfMonth, endOfMonth } from 'date-fns';

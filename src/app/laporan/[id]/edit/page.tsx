@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase/provider';
 
 import { ServiceForm } from '@/components/service-form';
 import { type HealthcareService, serviceSchema } from '@/lib/types';
