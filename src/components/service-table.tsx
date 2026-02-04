@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, Suspense } from 'react';
@@ -45,14 +44,14 @@ import { PasswordDialog } from './password-dialog';
 function ReportSkeleton() {
   return (
     <>
-      {/* Mobile Skeleton */}
-      <div className="md:hidden space-y-4 p-4">
+      {/* Mobile Skeleton is now hidden */}
+      <div className="hidden space-y-4 p-4">
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>
-      {/* Desktop Skeleton */}
-      <div className="hidden md:block rounded-md border">
+      {/* Desktop Skeleton is now always visible */}
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -313,8 +312,8 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
     <div
       className={cn('h-full', isPending && 'opacity-50 transition-opacity duration-300')}
     >
-      {/* Mobile View */}
-      <div className="md:hidden h-full overflow-y-auto">
+      {/* Mobile View - Hidden */}
+      <div className="hidden h-full overflow-y-auto">
         {services.length > 0 ? (
           <div className="space-y-4 p-4">
             {services.map((service) => (
@@ -338,8 +337,8 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
         )}
       </div>
 
-      {/* Desktop View */}
-      <div className="hidden md:block relative w-full overflow-auto rounded-md border h-[520px]">
+      {/* Table View (was Desktop) - Now visible on all screens */}
+      <div className="relative w-full overflow-auto rounded-md border h-[520px]">
         <Table>
           <TableHeader className="sticky top-0 bg-card">
             <TableRow>
