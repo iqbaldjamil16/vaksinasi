@@ -63,14 +63,16 @@ function processRecapData(services: HealthcareService[]): RecapData {
         }
 
         const desa = service.ownerAddress.trim() || 'Tidak Diketahui';
-        const livestockType = service.livestockType.trim();
+        
+        service.vaccinations.forEach(vaccination => {
+            const livestockType = vaccination.animalType.trim();
+            const livestockCount = vaccination.animalCount;
 
-        if (!recap[service.puskeswan].cases[desa]) {
-            recap[service.puskeswan].cases[desa] = {};
-        }
-        
-        recap[service.puskeswan].cases[desa][livestockType] = (recap[service.puskeswan].cases[desa][livestockType] || 0) + service.livestockCount;
-        
+            if (!recap[service.puskeswan].cases[desa]) {
+                recap[service.puskeswan].cases[desa] = {};
+            }
+            recap[service.puskeswan].cases[desa][livestockType] = (recap[service.puskeswan].cases[desa][livestockType] || 0) + livestockCount;
+        });
 
         service.treatments.forEach(treatment => {
             const medicineName = treatment.medicineName.trim();
@@ -148,16 +150,26 @@ export default function RekapPage() {
           querySnapshot.forEach((doc) => {
               const data = doc.data();
               try {
+                  if (!data.vaccinations && data.livestockType) {
+                    data.vaccinations = [{
+                        vaccineName: data.vaccinationProgram || '',
+                        animalType: data.livestockType,
+                        animalCount: data.livestockCount || 1,
+                    }];
+                  }
+
                   if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
                     let status = 'Sembuh';
                     if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
                       status = data.caseDevelopment;
                     }
+                    const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
                     data.caseDevelopments = [{
                       status: status,
-                      count: data.livestockCount || 1,
+                      count: totalAnimals,
                     }];
                   }
+
                   const service = serviceSchema.parse({
                       ...data,
                       id: doc.id,

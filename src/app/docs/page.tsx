@@ -64,14 +64,23 @@ export default function DocsPage() {
         querySnapshot.forEach((doc) => {
             const data = doc.data();
              try {
+                if (!data.vaccinations && data.livestockType) {
+                    data.vaccinations = [{
+                    vaccineName: data.vaccinationProgram || '',
+                    animalType: data.livestockType,
+                    animalCount: data.livestockCount || 1,
+                    }];
+                }
+
                 if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
                   let status = 'Sembuh';
                   if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
                     status = data.caseDevelopment;
                   }
+                   const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
                   data.caseDevelopments = [{
                     status: status,
-                    count: data.livestockCount || 1,
+                    count: totalAnimals,
                   }];
                 }
 
@@ -149,6 +158,7 @@ export default function DocsPage() {
                 .filter(dev => dev.status && dev.count > 0)
                 .map(dev => `${dev.status} (${dev.count})`)
                 .join(', ');
+              const animalDetails = service.vaccinations.map(v => `${v.animalType} (${v.animalCount})`).join('\n');
 
               const serviceData = [
                   index + 1,
@@ -156,14 +166,14 @@ export default function DocsPage() {
                   service.puskeswan,
                   service.ownerName,
                   service.ownerAddress,
-                  `${service.livestockType} (${service.livestockCount})`,
+                  animalDetails,
                   treatments,
-                  caseDevelopmentText || (service.caseDevelopment || '-'),
+                  caseDevelopmentText,
               ];
               tableRows.push(serviceData);
           });
           
-          const totalLivestock = services.reduce((sum, service) => sum + service.livestockCount, 0);
+          const totalLivestock = services.reduce((sum, service) => sum + service.vaccinations.reduce((s, v) => s + v.animalCount, 0), 0);
 
           autoTable(doc, {
               head: [tableColumn],

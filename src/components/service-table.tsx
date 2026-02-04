@@ -143,7 +143,7 @@ function ServiceCard({
     });
   };
 
-  const hasDevelopments = (service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0)) || service.caseDevelopment;
+  const hasDevelopments = (service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0));
 
   return (
     <Collapsible
@@ -189,11 +189,15 @@ function ServiceCard({
             </div>
             <div>
               <div className="text-xs font-semibold text-muted-foreground">
-                Ternak
+                Vaksinasi
               </div>
-              <Badge variant="secondary">
-                {service.livestockType} ({service.livestockCount})
-              </Badge>
+               <div className="flex flex-wrap gap-1 mt-1">
+                {service.vaccinations.map((v, index) => (
+                  <Badge key={index} variant="secondary">
+                    {v.animalType} ({v.animalCount}) - {v.vaccineName}
+                  </Badge>
+                ))}
+              </div>
             </div>
             <div>
               <div className="text-xs font-semibold text-muted-foreground">
@@ -218,8 +222,7 @@ function ServiceCard({
                   Perkembangan Kasus
                 </div>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0) ? (
-                    service.caseDevelopments.filter(d => d.status && d.count > 0).map((dev, index) => (
+                  {service.caseDevelopments?.filter(d => d.status && d.count > 0).map((dev, index) => (
                       <Badge
                         key={index}
                         variant={
@@ -232,20 +235,7 @@ function ServiceCard({
                       >
                         {dev.status} ({dev.count})
                       </Badge>
-                    ))
-                  ) : service.caseDevelopment ? (
-                    <Badge
-                      variant={
-                        service.caseDevelopment === 'Sembuh'
-                          ? 'default'
-                          : service.caseDevelopment === 'Mati'
-                          ? 'destructive'
-                          : 'secondary'
-                      }
-                    >
-                      {service.caseDevelopment}
-                    </Badge>
-                  ) : null}
+                    ))}
                 </div>
               </div>
             )}
@@ -407,7 +397,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
             <TableRow>
               <TableHead className="w-[120px]">Tanggal</TableHead>
               <TableHead>Pemilik</TableHead>
-              <TableHead>Jenis Ternak</TableHead>
+              <TableHead>Vaksinasi &amp; Kasus</TableHead>
               <TableHead>Pengobatan</TableHead>
               <TableHead>Petugas</TableHead>
               <TableHead className="w-[100px] text-center">Aksi</TableHead>
@@ -430,13 +420,16 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
                   </TableCell>
                   <TableCell className="align-top">
                      <div className="flex flex-col gap-1">
-                      <Badge variant="secondary" className="w-fit">
-                        {service.livestockType} ({service.livestockCount})
-                      </Badge>
-                      {((service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0)) || service.caseDevelopment) && (
+                      <div className="flex flex-wrap gap-1">
+                        {service.vaccinations.map((v, index) => (
+                          <Badge key={index} variant="secondary">
+                            {v.animalType} ({v.animalCount}) - {v.vaccineName}
+                          </Badge>
+                        ))}
+                      </div>
+                      {(service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0)) && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                            {service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0) ? (
-                                service.caseDevelopments.filter(d => d.status && d.count > 0).map((dev, index) => (
+                            {service.caseDevelopments.filter(d => d.status && d.count > 0).map((dev, index) => (
                                 <Badge
                                     key={index}
                                     variant={
@@ -449,18 +442,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
                                     {dev.status} ({dev.count})
                                 </Badge>
                                 ))
-                            ) : service.caseDevelopment ? (
-                                <Badge
-                                variant={
-                                    service.caseDevelopment === 'Sembuh' ? 'default' :
-                                    service.caseDevelopment === 'Mati' ? 'destructive' :
-                                    'secondary'
-                                }
-                                className="w-fit"
-                                >
-                                {service.caseDevelopment}
-                                </Badge>
-                            ) : null}
+                            }
                         </div>
                       )}
                     </div>
@@ -536,3 +518,4 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
     
 
     
+

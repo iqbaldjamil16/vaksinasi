@@ -130,14 +130,23 @@ export default function ReportPage() {
             data.officerName = 'Basuki Budianto';
           }
           
+          if (!data.vaccinations && data.livestockType) {
+            data.vaccinations = [{
+              vaccineName: data.vaccinationProgram || '',
+              animalType: data.livestockType,
+              animalCount: data.livestockCount || 1,
+            }];
+          }
+
           if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
             let status = 'Sembuh';
             if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
               status = data.caseDevelopment;
             }
+            const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
             data.caseDevelopments = [{
               status: status,
-              count: data.livestockCount || 1,
+              count: totalAnimals,
             }];
           }
           
@@ -176,7 +185,7 @@ export default function ReportPage() {
           const ownerName = service.ownerName.toLowerCase();
           const officerName = service.officerName.toLowerCase();
           const puskeswan = service.puskeswan.toLowerCase();
-          const livestockType = service.livestockType.toLowerCase();
+          const animalTypes = service.vaccinations.map(v => v.animalType.toLowerCase()).join(' ');
           const formattedDate = format(new Date(service.date), 'dd MMM yyyy', {
             locale: id,
           }).toLowerCase();
@@ -185,7 +194,7 @@ export default function ReportPage() {
             ownerName.includes(lowercasedFilter) ||
             officerName.includes(lowercasedFilter) ||
             puskeswan.includes(lowercasedFilter) ||
-            livestockType.includes(lowercasedFilter) ||
+            animalTypes.includes(lowercasedFilter) ||
             formattedDate.includes(lowercasedFilter)
           );
         });
@@ -238,7 +247,7 @@ export default function ReportPage() {
       });
 
       const allDataForSheet: any[] = [];
-      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Obat yang Digunakan', 'Dosis', 'Jumlah Ternak', 'Perkembangan Kasus'];
+      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Vaksin', 'Obat yang Digunakan', 'Dosis', 'Perkembangan Kasus'];
       const officerNames = Object.keys(servicesByOfficer).sort();
 
       officerNames.forEach(officerName => {
@@ -252,14 +261,19 @@ export default function ReportPage() {
               .map(dev => `${dev.status} (${dev.count})`)
               .join(', ');
 
+          const animalDetails = service.vaccinations.map(v => v.animalType).join(', ');
+          const animalCounts = service.vaccinations.map(v => v.animalCount).join(', ');
+          const vaccineNames = service.vaccinations.map(v => v.vaccineName).join(', ');
+
           return {
             'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
             'Nama Pemilik': service.ownerName,
             'Alamat Pemilik': service.ownerAddress,
-            'Jenis Ternak': service.livestockType,
+            'Jenis Ternak': animalDetails,
+            'Jumlah': animalCounts,
+            'Vaksin': vaccineNames,
             'Obat yang Digunakan': service.treatments.map((t) => t.medicineName).join(', '),
             'Dosis': service.treatments.map((t) => `${t.dosageValue} ${t.dosageUnit}`).join(', '),
-            'Jumlah Ternak': service.livestockCount,
             'Perkembangan Kasus': caseDevelopmentText,
           };
         });
@@ -442,3 +456,4 @@ export default function ReportPage() {
     
 
     
+

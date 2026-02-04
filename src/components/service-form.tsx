@@ -43,21 +43,12 @@ export function ServiceForm({ initialData }: { initialData?: HealthcareService }
   const { firestore } = useFirebase();
   const router = useRouter();
   const isEditMode = !!initialData;
-  const [showManualLivestockType, setShowManualLivestockType] = useState(
-    initialData ? !livestockTypes.includes(initialData.livestockType) : false
-  );
-  const [showManualVaccinationProgram, setShowManualVaccinationProgram] = useState(
-    initialData && initialData.vaccinationProgram ? !vaccinationPrograms.includes(initialData.vaccinationProgram) : false
-  );
 
   const form = useForm<HealthcareService>({
     resolver: zodResolver(serviceSchema),
     defaultValues: initialData ? {
       ...initialData,
       date: initialData.date ? new Date(initialData.date) : new Date(),
-      caseDevelopments: (initialData.caseDevelopments && initialData.caseDevelopments.length > 0)
-        ? initialData.caseDevelopments
-        : [{ status: "", count: initialData.livestockCount || 1 }],
     } : {
       date: new Date(),
       puskeswan: "",
@@ -66,9 +57,7 @@ export function ServiceForm({ initialData }: { initialData?: HealthcareService }
       ownerAddress: "",
       nik: "",
       phoneNumber: "",
-      vaccinationProgram: "",
-      livestockType: "",
-      livestockCount: 1,
+      vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1 }],
       treatments: [{ medicineType: "", medicineName: "", dosageValue: 0, dosageUnit: "ml" }],
       caseDevelopments: [{ status: "", count: 1 }],
     },
@@ -82,6 +71,11 @@ export function ServiceForm({ initialData }: { initialData?: HealthcareService }
   const { fields: caseDevelopmentFields, append: appendCaseDevelopment, remove: removeCaseDevelopment } = useFieldArray({
     control: form.control,
     name: "caseDevelopments",
+  });
+
+  const { fields: vaccinationFields, append: appendVaccination, remove: removeVaccination } = useFieldArray({
+    control: form.control,
+    name: "vaccinations",
   });
 
   const watchedPuskeswan = form.watch("puskeswan");
@@ -380,115 +374,115 @@ export function ServiceForm({ initialData }: { initialData?: HealthcareService }
                 />
               </CardContent>
             </Card>
-            <Card>
-                <CardContent className="p-4">
-                <FormField
-                    control={form.control}
-                    name="vaccinationProgram"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Program Vaksinasi</FormLabel>
-                        {showManualVaccinationProgram ? (
-                        <FormControl>
-                            <Input 
-                            placeholder="Masukkan program vaksinasi"
-                            {...field}
-                            />
-                        </FormControl>
-                        ) : (
-                        <Select 
-                            onValueChange={(value) => {
-                            if (value === 'Lainnya') {
-                                setShowManualVaccinationProgram(true);
-                                field.onChange('');
-                            } else {
-                                field.onChange(value);
-                            }
-                            }} 
-                            value={field.value}
+             <Card>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label>
+                      Vaksinasi
+                      <span className="ml-2 text-xs italic font-normal text-muted-foreground">
+                        (Detail hewan dan vaksin yang diberikan)
+                      </span>
+                    </Label>
+                  </div>
+                  {vaccinationFields.map((item, index) => (
+                    <Card key={item.id} className="relative p-4 bg-card">
+                      {vaccinationFields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute -top-1 -right-1 h-6 w-6"
+                          onClick={() => removeVaccination(index)}
                         >
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Pilih Program Vaksinasi" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {vaccinationPrograms.map((program) => (
-                                <SelectItem key={program} value={program}>{program}</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                        )}
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                </CardContent>
-            </Card>
-            <Card>
-                <CardContent className="p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="livestockType"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>
-                              Jenis Ternak
-                              <span className="ml-2 text-xs italic font-normal text-muted-foreground">
-                                (Pilih Lainnya Jika Jenis Ternak Tidak Tercantum)
-                              </span>
-                            </FormLabel>
-                            {showManualLivestockType ? (
-                              <FormControl>
-                                <Input 
-                                  placeholder="Masukkan jenis ternak"
-                                  {...field}
-                                />
-                              </FormControl>
-                            ) : (
-                              <Select 
-                                onValueChange={(value) => {
-                                  if (value === 'Lainnya') {
-                                    setShowManualLivestockType(true);
-                                    field.onChange('');
-                                  } else {
-                                    field.onChange(value);
-                                  }
-                                }} 
-                                value={field.value}
-                              >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name={`vaccinations.${index}.vaccineName`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Jenis Vaksin</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Pilih Jenis Ternak" />
-                                    </SelectTrigger>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Pilih Jenis Vaksin" />
+                                  </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {livestockTypes.map((type) => (
-                                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                                    ))}
+                                  {vaccinationPrograms.map((program) => (
+                                    <SelectItem key={program} value={program}>
+                                      {program}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                           <FormField
+                            control={form.control}
+                            name={`vaccinations.${index}.animalType`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Jenis Hewan</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Pilih Jenis" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {livestockTypes.map((type) => (
+                                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
                             )}
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="livestockCount"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Jumlah</FormLabel>
-                            <FormControl>
-                            <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    </div>
-                </CardContent>
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`vaccinations.${index}.animalCount`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Jumlah</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    placeholder="Jumlah"
+                                    {...field}
+                                    onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  <div className="flex justify-start">
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      className="bg-accent text-accent-foreground hover:bg-accent/90"
+                      onClick={() => appendVaccination({ vaccineName: '', animalType: '', animalCount: 1 })}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Tambah
+                    </Button>
+                  </div>
+                  <FormMessage>{form.formState.errors.vaccinations?.message}</FormMessage>
+                </div>
+              </CardContent>
             </Card>
           </div>
 

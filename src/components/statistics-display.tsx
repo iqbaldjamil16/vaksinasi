@@ -22,12 +22,14 @@ function calculateStats(services: HealthcareService[], groupBy: 'month' | 'offic
 
   services.forEach(service => {
       let key: string;
+      const totalAnimals = service.vaccinations.reduce((sum, v) => sum + v.animalCount, 0);
+
       if (groupBy === 'month') {
           key = format(new Date(service.date), 'MMMM yyyy', { locale: id });
       } else {
-          key = service[groupBy as keyof Omit<HealthcareService, 'date'>] as string;
+          key = service[groupBy as keyof Omit<HealthcareService, 'date' | 'vaccinations' | 'treatments' | 'caseDevelopments'>] as string;
       }
-      counts[key] = (counts[key] || 0) + service.livestockCount;
+      counts[key] = (counts[key] || 0) + totalAnimals;
   });
 
   return Object.entries(counts)

@@ -54,13 +54,16 @@ function processRecapData(services: HealthcareService[]): RecapData {
 
     services.forEach(service => {
         const desa = service.ownerAddress.trim() || 'Tidak Diketahui';
-        const livestockType = service.livestockType.trim();
-
-        if (!recap.cases[desa]) {
-            recap.cases[desa] = {};
-        }
         
-        recap.cases[desa][livestockType] = (recap.cases[desa][livestockType] || 0) + service.livestockCount;
+        service.vaccinations.forEach(vaccination => {
+            const livestockType = vaccination.animalType.trim();
+            const livestockCount = vaccination.animalCount;
+
+            if (!recap.cases[desa]) {
+                recap.cases[desa] = {};
+            }
+            recap.cases[desa][livestockType] = (recap.cases[desa][livestockType] || 0) + livestockCount;
+        });
 
         service.treatments.forEach(treatment => {
             const medicineName = treatment.medicineName.trim();
@@ -167,14 +170,23 @@ export default function RekapTopoyoPage() {
           querySnapshot.forEach((doc) => {
               const data = doc.data();
               try {
+                  if (!data.vaccinations && data.livestockType) {
+                    data.vaccinations = [{
+                        vaccineName: data.vaccinationProgram || '',
+                        animalType: data.livestockType,
+                        animalCount: data.livestockCount || 1,
+                    }];
+                  }
+
                   if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
                     let status = 'Sembuh';
                     if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
                       status = data.caseDevelopment;
                     }
+                    const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
                     data.caseDevelopments = [{
                       status: status,
-                      count: data.livestockCount || 1,
+                      count: totalAnimals,
                     }];
                   }
                   const service = serviceSchema.parse({
@@ -213,7 +225,7 @@ export default function RekapTopoyoPage() {
               const ownerName = service.ownerName.toLowerCase();
               const officerName = service.officerName.toLowerCase();
               const puskeswan = service.puskeswan.toLowerCase();
-              const livestockType = service.livestockType.toLowerCase();
+              const animalTypes = service.vaccinations.map(v => v.animalType.toLowerCase()).join(' ');
               const formattedDate = format(new Date(service.date), 'dd MMM yyyy', {
                 locale: id,
               }).toLowerCase();
@@ -222,7 +234,7 @@ export default function RekapTopoyoPage() {
                 ownerName.includes(lowercasedFilter) ||
                 officerName.includes(lowercasedFilter) ||
                 puskeswan.includes(lowercasedFilter) ||
-                livestockType.includes(lowercasedFilter) ||
+                animalTypes.includes(lowercasedFilter) ||
                 formattedDate.includes(lowercasedFilter)
               );
             });
@@ -289,7 +301,7 @@ export default function RekapTopoyoPage() {
         officerNames.forEach(officerName => {
             const officerServices = servicesByOfficer[officerName].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
             
-            const tableHeaders = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Obat yang Digunakan', 'Dosis', 'Jumlah Ternak'];
+            const tableHeaders = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Vaksin', 'Obat yang Digunakan', 'Dosis'];
             
             const sheetData: any[][] = [
                 ["PEMERINTAHAN KABUPATEN MAMUJU TENGAH"],
@@ -305,14 +317,18 @@ export default function RekapTopoyoPage() {
             ];
     
             officerServices.forEach(service => {
+                const animalDetails = service.vaccinations.map(v => v.animalType).join(', ');
+                const animalCounts = service.vaccinations.map(v => v.animalCount).join(', ');
+                const vaccineNames = service.vaccinations.map(v => v.vaccineName).join(', ');
                 sheetData.push([
                     format(new Date(service.date), 'dd-MM-yyyy'),
                     service.ownerName,
                     service.ownerAddress,
-                    service.livestockType,
+                    animalDetails,
+                    animalCounts,
+                    vaccineNames,
                     service.treatments.map((t) => t.medicineName).join(', '),
                     service.treatments.map((t) => `${t.dosageValue} ${t.dosageUnit}`).join(', '),
-                    service.livestockCount,
                 ]);
             });
     
@@ -329,10 +345,11 @@ export default function RekapTopoyoPage() {
                 { wch: 12 }, 
                 { wch: 20 }, 
                 { wch: 20 }, 
-                { wch: 15 }, 
-                { wch: 30 }, 
                 { wch: 20 }, 
-                { wch: 12 }, 
+                { wch: 10 }, 
+                { wch: 20 }, 
+                { wch: 30 }, 
+                { wch: 20 },
             ];
     
             const sheetName = officerName.replace(/[/\\?*:[\]]/g, '').substring(0, 31);

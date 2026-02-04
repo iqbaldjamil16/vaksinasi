@@ -13,6 +13,12 @@ export const caseDevelopmentEntrySchema = z.object({
   count: z.coerce.number().min(1, "Jumlah harus minimal 1."),
 });
 
+export const vaccinationDetailSchema = z.object({
+  vaccineName: z.string().min(1, "Jenis vaksin wajib diisi."),
+  animalType: z.string().min(1, "Jenis hewan wajib diisi."),
+  animalCount: z.coerce.number().min(1, "Jumlah hewan harus minimal 1."),
+});
+
 
 export const serviceSchema = z.object({
   id: z.string().optional(),
@@ -31,19 +37,28 @@ export const serviceSchema = z.object({
     (val) => val === undefined || val === '' || /^(\+62|0)8[1-9][0-9]{7,11}$/.test(val), {
     message: "Format No. HP tidak valid. Contoh: 081234567890",
   }),
-  vaccinationProgram: z.string().optional(),
-  livestockType: z.string().min(1, "Wajib diisi."),
-  livestockCount: z.coerce.number().min(1, "Jumlah ternak harus minimal 1."),
+  
+  vaccinations: z.array(vaccinationDetailSchema).min(1, "Minimal satu detail vaksinasi harus ditambahkan."),
+  
   treatments: z.array(treatmentSchema).min(1, "Minimal satu pengobatan harus ditambahkan."),
-  caseDevelopment: z.string().optional(),
+  
   caseDevelopments: z.array(caseDevelopmentEntrySchema).min(1, "Minimal satu perkembangan kasus wajib ditambahkan.").optional(),
+  
+  // Legacy fields for backward compatibility
+  vaccinationProgram: z.string().optional(),
+  livestockType: z.string().optional(),
+  livestockCount: z.coerce.number().optional(),
+  caseDevelopment: z.string().optional(),
+
 }).superRefine((data, ctx) => {
   if (data.caseDevelopments && data.caseDevelopments.length > 0) {
     const totalDevelopmentCount = data.caseDevelopments.reduce((sum, dev) => sum + dev.count, 0);
-    if (totalDevelopmentCount > data.livestockCount) {
+    const totalAnimalCount = data.vaccinations.reduce((sum, v) => sum + v.animalCount, 0);
+    
+    if (totalDevelopmentCount > totalAnimalCount) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Total jumlah pada perkembangan kasus (${totalDevelopmentCount}) tidak boleh melebihi jumlah ternak (${data.livestockCount}).`,
+        message: `Total jumlah pada perkembangan kasus (${totalDevelopmentCount}) tidak boleh melebihi jumlah ternak (${totalAnimalCount}).`,
         path: ["caseDevelopments"],
       });
     }
@@ -53,4 +68,5 @@ export const serviceSchema = z.object({
 export type HealthcareService = z.infer<typeof serviceSchema>;
 export type Treatment = z.infer<typeof treatmentSchema>;
 export type CaseDevelopmentEntry = z.infer<typeof caseDevelopmentEntrySchema>;
+export type VaccinationDetail = z.infer<typeof vaccinationDetailSchema>;
     

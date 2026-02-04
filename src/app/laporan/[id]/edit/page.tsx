@@ -51,14 +51,24 @@ export default function EditServicePage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
 
+          // Backward compatibility for old data structure
+          if (!data.vaccinations && data.livestockType) {
+            data.vaccinations = [{
+              vaccineName: data.vaccinationProgram || '',
+              animalType: data.livestockType,
+              animalCount: data.livestockCount || 1,
+            }];
+          }
+
           if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
             let status = 'Sembuh';
             if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
               status = data.caseDevelopment;
             }
+            const totalAnimals = data.vaccinations?.reduce((sum: number, v: any) => sum + v.animalCount, 0) || 1;
             data.caseDevelopments = [{
               status: status,
-              count: data.livestockCount || 1,
+              count: totalAnimals,
             }];
           }
 
