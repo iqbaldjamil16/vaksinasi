@@ -6,8 +6,6 @@ import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
   type Firestore,
-  initializeFirestore,
-  memoryLocalCache,
 } from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
@@ -43,16 +41,12 @@ export function initializeFirebase() {
 // This function is now simplified to use getFirestore, which is idempotent
 // and handles initialization correctly on the client-side with persistence.
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Use initializeFirestore for more control, especially for SSR
-  const firestore = initializeFirestore(firebaseApp, {
-    // Use memory cache for SSR to avoid persistence issues on the server
-    localCache: memoryLocalCache(),
-  });
-
+    // getFirestore() is idempotent and handles initialization.
+    // On the client, it enables persistence by default.
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: firestore,
+    firestore: getFirestore(firebaseApp),
   };
 }
 
