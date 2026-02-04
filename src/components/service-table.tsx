@@ -25,18 +25,11 @@ import {
 } from './ui/card';
 import {
   PawPrint,
-  PlusCircle,
   ChevronDown,
   Pencil,
   Trash2,
   Loader2,
 } from 'lucide-react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Button } from './ui/button';
 import {
   Collapsible,
@@ -75,9 +68,6 @@ function ReportSkeleton() {
               <TableHead>
                 <Skeleton className="h-5 w-full" />
               </TableHead>
-              <TableHead>
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
               <TableHead className="w-[100px]">
                 <Skeleton className="h-5 w-full" />
               </TableHead>
@@ -85,17 +75,17 @@ function ReportSkeleton() {
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={6}>
+              <TableCell colSpan={5}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell colSpan={6}>
+              <TableCell colSpan={5}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell colSpan={6}>
+              <TableCell colSpan={5}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
@@ -142,8 +132,6 @@ function ServiceCard({
       }
     });
   };
-
-  const hasDevelopments = (service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0));
 
   return (
     <Collapsible
@@ -199,46 +187,6 @@ function ServiceCard({
                 ))}
               </div>
             </div>
-            <div>
-              <div className="text-xs font-semibold text-muted-foreground">
-                Pengobatan
-              </div>
-              <ul className="list-disc pl-5 mt-1 space-y-1 text-sm">
-                {service.treatments.map((treatment, index) => (
-                  <li key={index}>
-                    <span className="font-semibold">{treatment.medicineName}</span>{' '}
-                    ({treatment.dosageValue} {treatment.dosageUnit})
-                    <br />
-                    <span className="text-muted-foreground text-xs">
-                      {treatment.medicineType}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {hasDevelopments && (
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground">
-                  Perkembangan Kasus
-                </div>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {service.caseDevelopments?.filter(d => d.status && d.count > 0).map((dev, index) => (
-                      <Badge
-                        key={index}
-                        variant={
-                          dev.status === 'Sembuh'
-                            ? 'default'
-                            : dev.status === 'Mati'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                      >
-                        {dev.status} ({dev.count})
-                      </Badge>
-                    ))}
-                </div>
-              </div>
-            )}
           </CardContent>
           <CardFooter className="p-4 pt-0 justify-end gap-2">
             <PasswordDialog
@@ -397,8 +345,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
             <TableRow>
               <TableHead className="w-[120px]">Tanggal</TableHead>
               <TableHead>Pemilik</TableHead>
-              <TableHead>Vaksinasi &amp; Kasus</TableHead>
-              <TableHead>Pengobatan</TableHead>
+              <TableHead>Vaksinasi</TableHead>
               <TableHead>Petugas</TableHead>
               <TableHead className="w-[100px] text-center">Aksi</TableHead>
             </TableRow>
@@ -419,64 +366,13 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
                     </div>
                   </TableCell>
                   <TableCell className="align-top">
-                     <div className="flex flex-col gap-1">
-                      <div className="flex flex-wrap gap-1">
-                        {service.vaccinations.map((v, index) => (
-                          <Badge key={index} variant="secondary">
-                            {v.animalType} ({v.animalCount}) - {v.vaccineName}
-                          </Badge>
-                        ))}
-                      </div>
-                      {(service.caseDevelopments && service.caseDevelopments.length > 0 && service.caseDevelopments.some(d => d.status && d.count > 0)) && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                            {service.caseDevelopments.filter(d => d.status && d.count > 0).map((dev, index) => (
-                                <Badge
-                                    key={index}
-                                    variant={
-                                    dev.status === 'Sembuh' ? 'default' :
-                                    dev.status === 'Mati' ? 'destructive' :
-                                    'secondary'
-                                    }
-                                    className="w-fit"
-                                >
-                                    {dev.status} ({dev.count})
-                                </Badge>
-                                ))
-                            }
-                        </div>
-                      )}
+                     <div className="flex flex-wrap gap-1">
+                      {service.vaccinations.map((v, index) => (
+                        <Badge key={index} variant="secondary">
+                          {v.animalType} ({v.animalCount}) - {v.vaccineName}
+                        </Badge>
+                      ))}
                     </div>
-                  </TableCell>
-                  <TableCell className="align-top">
-                    <Accordion
-                      type="single"
-                      collapsible
-                      className="w-full max-w-xs"
-                    >
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger className="py-1 text-primary hover:no-underline">
-                          <PlusCircle className="mr-2 h-4 w-4" /> Lihat{' '}
-                          {service.treatments.length} pengobatan
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="list-disc pl-5 space-y-1 text-xs">
-                            {service.treatments.map((treatment, index) => (
-                              <li key={index}>
-                                <span className="font-semibold">
-                                  {treatment.medicineName}
-                                </span>{' '}
-                                ({treatment.dosageValue}{' '}
-                                {treatment.dosageUnit})
-                                <br />
-                                <span className="text-muted-foreground">
-                                  {treatment.medicineType}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
                   </TableCell>
                   <TableCell className="align-top">
                     <div className="font-medium">{service.officerName}</div>
@@ -494,7 +390,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <PawPrint className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">
@@ -512,10 +408,3 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
     </div>
   );
 }
-
-
-
-    
-
-    
-
