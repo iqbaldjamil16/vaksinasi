@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useTransition, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from 'date-fns/locale';
-import { doc, collection, Timestamp, Firestore } from 'firebase/firestore';
+import { doc, collection, Timestamp, setDoc, addDoc } from 'firebase/firestore';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
@@ -35,11 +35,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { useFirebase } from "@/firebase/provider";
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export function ServiceForm({ initialData, formType }: { initialData?: HealthcareService, formType?: 'keswan' | 'vaksinasi' }) {
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const router = useRouter();
@@ -130,52 +129,47 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
         });
         return;
     }
+    
+    setIsSubmitting(true);
+    try {
+      const { id, caseDevelopment, ...dataToSave } = values;
+      
+      const serviceData = {
+        ...dataToSave,
+        date: Timestamp.fromDate(values.date),
+      };
 
-    startTransition(() => {
-      try {
-        const { id, caseDevelopment, ...dataToSave } = values;
-        
-        const serviceData = {
-          ...dataToSave,
-          date: Timestamp.fromDate(values.date),
-        };
+      if (isEditMode && initialData?.id) {
+          const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
+          await setDoc(serviceDocRef, serviceData, { merge: true });
+          toast({
+            title: "Sukses",
+            description: "Data pelayanan berhasil diperbarui.",
+          });
+      } else {
+          const servicesCollection = collection(firestore, 'healthcareServices');
+          const newDocRef = await addDoc(servicesCollection, serviceData);
+          
+          const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
+          newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
+          localStorage.setItem('newEntries', JSON.stringify(newEntries));
 
-        if (isEditMode && initialData?.id) {
-            const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
-            updateDocumentNonBlocking(serviceDocRef, serviceData);
-            toast({
+          toast({
               title: "Sukses",
-              description: "Data pelayanan sedang diperbarui.",
-            });
-        } else {
-            const servicesCollection = collection(firestore, 'healthcareServices');
-            const addPromise = addDocumentNonBlocking(servicesCollection, serviceData);
-            
-            addPromise.then(newDocRef => {
-              if (newDocRef) {
-                const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
-                newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
-                localStorage.setItem('newEntries', JSON.stringify(newEntries));
-              }
-            }).catch(e => {
-                console.error("Error during non-blocking add for highlighting:", e);
-            });
-
-            toast({
-                title: "Sukses",
-                description: "Data pelayanan berhasil disimpan!",
-            });
-        }
-        router.push('/laporan');
-      } catch (error: any) {
-        console.error("Submit error:", error);
-        toast({
-          variant: "destructive",
-          title: "Gagal Menyimpan",
-          description: error.message || "Terjadi kesalahan saat menyimpan data.",
-        });
+              description: "Data pelayanan berhasil disimpan!",
+          });
       }
-    });
+      router.push('/laporan');
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      toast({
+        variant: "destructive",
+        title: "Gagal Menyimpan",
+        description: error.message || "Terjadi kesalahan saat menyimpan data. Periksa koneksi internet Anda.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -843,8 +837,8 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
           </div>
         </div>
         <div className="flex justify-start md:justify-end">
-          <Button type="submit" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? 'Simpan Perubahan' : 'Simpan Data'}
           </Button>
         </div>
@@ -853,6 +847,8 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
   );
 }
     
+    
+
     
 
     
