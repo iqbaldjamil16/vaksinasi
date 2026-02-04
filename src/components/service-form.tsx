@@ -8,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id } from 'date-fns/locale';
-import { doc, collection, Timestamp, setDoc, addDoc } from 'firebase/firestore';
+import { doc, collection, Timestamp, DocumentReference } from 'firebase/firestore';
+import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
@@ -120,7 +121,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     initialData ? isDesaSelection && !desaList.includes(initialData.ownerAddress) : false
   );
 
-  async function onSubmit(values: HealthcareService) {
+  function onSubmit(values: HealthcareService) {
     if (!firestore) {
         toast({
           variant: "destructive",
@@ -131,45 +132,38 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
     }
     
     setIsSubmitting(true);
-    try {
-      const { id, caseDevelopment, ...dataToSave } = values;
-      
-      const serviceData = {
-        ...dataToSave,
-        date: Timestamp.fromDate(values.date),
-      };
 
-      if (isEditMode && initialData?.id) {
-          const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
-          await setDoc(serviceDocRef, serviceData, { merge: true });
-          toast({
+    const { id, caseDevelopment, ...dataToSave } = values;
+    
+    const serviceData = {
+      ...dataToSave,
+      date: Timestamp.fromDate(values.date),
+    };
+
+    if (isEditMode && initialData?.id) {
+        const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
+        setDocumentNonBlocking(serviceDocRef, serviceData, { merge: true });
+        toast({
+          title: "Sukses",
+          description: "Data pelayanan berhasil diperbarui.",
+        });
+    } else {
+        const servicesCollection = collection(firestore, 'healthcareServices');
+        addDocumentNonBlocking(servicesCollection, serviceData)
+          .then((newDocRef) => {
+            if (newDocRef) {
+                const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
+                newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
+                localStorage.setItem('newEntries', JSON.stringify(newEntries));
+            }
+          });
+
+        toast({
             title: "Sukses",
-            description: "Data pelayanan berhasil diperbarui.",
-          });
-      } else {
-          const servicesCollection = collection(firestore, 'healthcareServices');
-          const newDocRef = await addDoc(servicesCollection, serviceData);
-          
-          const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
-          newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
-          localStorage.setItem('newEntries', JSON.stringify(newEntries));
-
-          toast({
-              title: "Sukses",
-              description: "Data pelayanan berhasil disimpan!",
-          });
-      }
-      router.push('/laporan');
-    } catch (error: any) {
-      console.error("Submit error:", error);
-      toast({
-        variant: "destructive",
-        title: "Gagal Menyimpan",
-        description: error.message || "Terjadi kesalahan saat menyimpan data. Periksa koneksi internet Anda.",
-      });
-    } finally {
-      setIsSubmitting(false);
+            description: "Data pelayanan berhasil disimpan!",
+        });
     }
+    router.push('/laporan');
   }
 
   return (
@@ -847,6 +841,8 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
   );
 }
     
+    
+
     
 
     
