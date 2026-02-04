@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useTransition, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useTransition, useEffect, useMemo, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import * as XLSX from 'xlsx';
 import { getYear, getMonth, format, subYears, startOfMonth, endOfMonth } from "date-fns";
 import { id } from 'date-fns/locale';
-import { collection, query, orderBy, getDocs, Timestamp, where } from 'firebase/firestore';
+import { collection, query, orderBy, Timestamp, where } from 'firebase/firestore';
 
 import { ServiceTable } from "@/components/service-table";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import { type HealthcareService, serviceSchema } from "@/lib/types";
 import { PasswordDialog } from "@/components/password-dialog";
 import { puskeswanList } from "@/lib/definitions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFirebase } from "@/firebase";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -64,9 +64,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 export default function ReportPage() {
   const router = useRouter();
   const { firestore } = useFirebase();
-  const [services, setServices] = useState<HealthcareService[]>([]);
   const [filteredServices, setFilteredServices] = useState<HealthcareService[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
   const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
@@ -95,13 +93,12 @@ export default function ReportPage() {
 
     return () => clearInterval(interval);
   }, []);
+  
+  const servicesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
 
-  const loadServices = useCallback(async (yearStr: string, monthStr: string) => {
-    if (!firestore) return;
-    setLoading(true);
-
-    const year = yearStr === 'all-years' || yearStr === '' ? null : parseInt(yearStr, 10);
-    const month = monthStr === 'all-months' || monthStr === '' ? null : parseInt(monthStr, 10);
+    const year = selectedYear === 'all-years' || selectedYear === '' ? null : parseInt(selectedYear, 10);
+    const month = selectedMonth === 'all-months' || selectedMonth === '' ? null : parseInt(selectedMonth, 10);
 
     const servicesCollection = collection(firestore, 'healthcareServices');
     const queryConstraints = [orderBy('date', 'desc')];
@@ -118,13 +115,17 @@ export default function ReportPage() {
         queryConstraints.push(where('date', '<=', endDate));
     }
 
-    const q = query(servicesCollection, ...queryConstraints);
+    return query(servicesCollection, ...queryConstraints);
+  }, [firestore, selectedYear, selectedMonth]);
 
-    try {
-      const querySnapshot = await getDocs(q);
-      const fetchedServices: HealthcareService[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+  const { data: rawServices, isLoading: loading } = useCollection<any>(servicesQuery);
+
+  const services = useMemo(() => {
+    if (!rawServices) return [];
+    
+    const fetchedServices: HealthcareService[] = [];
+    rawServices.forEach((doc) => {
+        const data = doc;
         try {
           if (data.officerName && data.officerName.toLowerCase().includes('basuki')) {
             data.officerName = 'Basuki Budianto';
@@ -160,20 +161,9 @@ export default function ReportPage() {
           console.error('Validation error parsing service data:', e);
         }
       });
-      setServices(fetchedServices);
-    } catch (error) {
-      console.error('Failed to fetch services:', error);
-      setServices([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [firestore]);
+      return fetchedServices;
+  }, [rawServices]);
 
-  useEffect(() => {
-    startTransition(() => {
-        loadServices(selectedYear, selectedMonth);
-    });
-  }, [loadServices, selectedYear, selectedMonth]);
 
   useEffect(() => {
     startTransition(() => {
@@ -211,7 +201,7 @@ export default function ReportPage() {
   }, [searchTerm, services, highlightedIds]);
 
   const handleLocalDelete = (serviceId: string) => {
-    setServices((currentServices) =>
+    setFilteredServices((currentServices) =>
       currentServices.filter((s) => s.id !== serviceId)
     );
      const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
@@ -384,7 +374,7 @@ export default function ReportPage() {
           <TabsContent value="tabel" className="md:pt-4">
             <ServiceTable
               services={filteredServices}
-              loading={loading && services.length === 0}
+              loading={loading}
               highlightedIds={highlightedIds}
               searchTerm={searchTerm}
               onDelete={handleLocalDelete}
