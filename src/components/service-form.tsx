@@ -158,23 +158,10 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
 
           toast({
               title: "Sukses",
-              description: "Data pelayanan berhasil disimpan!",
+              description: "Data pelayanan berhasil disimpan. Anda akan diarahkan ke halaman laporan.",
           });
-
-          // Reset form for next entry, keeping some fields
-          form.reset({
-            ...values, // keep all current values
-            ownerName: "",
-            ownerAddress: "",
-            nik: "",
-            phoneNumber: "",
-            vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1 }],
-            treatments: [],
-            caseDevelopments: formType === 'vaksinasi' ? [] : [{ status: "", count: 1 }],
-          });
-          setShowManualVaccineName([false]);
-          setShowManualOwnerAddress(false);
-          // Do not redirect, stay on page for more entries
+          
+          router.push('/laporan');
       }
     } catch (error) {
       console.error("Gagal menyimpan data:", error);
