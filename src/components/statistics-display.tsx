@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -33,6 +32,28 @@ function calculateStats(services: HealthcareService[], groupBy: 'month' | 'offic
   });
 
   return Object.entries(counts)
+      .map(([name, count]) => ({
+          name,
+          count,
+      }))
+      .sort((a, b) => b.count - a.count);
+}
+
+function calculateVaccineStats(services: HealthcareService[]): StatItem[] {
+    if (services.length === 0) return [];
+  
+    const counts: { [key: string]: number } = {};
+  
+    services.forEach(service => {
+      service.vaccinations.forEach(vaccination => {
+          if (vaccination.vaccineName) {
+              const key = vaccination.vaccineName;
+              counts[key] = (counts[key] || 0) + (vaccination.animalCount || 0);
+          }
+      });
+    });
+  
+    return Object.entries(counts)
       .map(([name, count]) => ({
           name,
           count,
@@ -118,7 +139,6 @@ const StatChart = ({
                 <Bar
                   dataKey="count"
                   name="Jumlah Ternak"
-                  animationDuration={2000}
                   radius={[0, 4, 4, 0]}
                 >
                   <LabelList
@@ -207,7 +227,6 @@ const StatPieChart = ({ title, data, colors, defaultColor }: {
                       innerRadius={isMobile ? 30 : 40}
                       dataKey="count"
                       nameKey="name"
-                      animationDuration={1500}
                   >
                       {data.map((entry) => (
                           <Cell key={`cell-${entry.name}`} fill={colors[entry.name] || defaultColor} stroke={'hsl(var(--card))'} strokeWidth={2}/>
@@ -280,6 +299,7 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
   const statsByMonth = calculateStats(services, 'month');
   const statsByOfficer = calculateStats(services, 'officerName');
   const statsByPuskeswan = calculateStats(services, 'puskeswan');
+  const statsByVaccine = calculateVaccineStats(services);
 
 
   const officerToPuskeswanMap: { [key: string]: string } = {};
@@ -304,6 +324,12 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
 
   return (
     <div className="space-y-6">
+      <StatChart
+        title="Statistik Vaksinasi"
+        data={statsByVaccine}
+        defaultColor="#4682B4"
+        showAll={true}
+      />
       <StatChart
         title="Statistik per Bulan"
         data={statsByMonth}
