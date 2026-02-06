@@ -61,6 +61,38 @@ function calculateVaccineStats(services: HealthcareService[]): StatItem[] {
       .sort((a, b) => b.count - a.count);
 }
 
+function calculateVaccineStatsByPuskeswan(services: HealthcareService[]): { [puskeswan: string]: StatItem[] } {
+    if (services.length === 0) return {};
+  
+    const puskeswanStats: { [puskeswan: string]: { [vaccineName: string]: number } } = {};
+  
+    services.forEach(service => {
+      if (!service.puskeswan) return;
+      if (!puskeswanStats[service.puskeswan]) {
+        puskeswanStats[service.puskeswan] = {};
+      }
+  
+      service.vaccinations.forEach(vaccination => {
+        if (vaccination.vaccineName) {
+          const key = vaccination.vaccineName;
+          puskeswanStats[service.puskeswan][key] = (puskeswanStats[service.puskeswan][key] || 0) + (vaccination.animalCount || 0);
+        }
+      });
+    });
+  
+    const result: { [puskeswan: string]: StatItem[] } = {};
+    for (const puskeswan in puskeswanStats) {
+      result[puskeswan] = Object.entries(puskeswanStats[puskeswan])
+        .map(([name, count]) => ({
+          name,
+          count,
+        }))
+        .sort((a, b) => b.count - a.count);
+    }
+  
+    return result;
+}
+
 const StatChart = ({
   title,
   data,
@@ -300,7 +332,7 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
   const statsByOfficer = calculateStats(services, 'officerName');
   const statsByPuskeswan = calculateStats(services, 'puskeswan');
   const statsByVaccine = calculateVaccineStats(services);
-
+  const vaccineStatsByPuskeswan = calculateVaccineStatsByPuskeswan(services);
 
   const officerToPuskeswanMap: { [key: string]: string } = {};
   services.forEach((service) => {
@@ -351,6 +383,17 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
         defaultColor="#4682B4"
         showAll={true}
       />
+      {Object.entries(vaccineStatsByPuskeswan)
+        .sort(([puskeswanA], [puskeswanB]) => puskeswanA.localeCompare(puskeswanB))
+        .map(([puskeswan, data]) => (
+        <StatChart
+          key={puskeswan}
+          title={`Statistik Vaksinasi - ${puskeswan.replace('Puskeswan ', '')}`}
+          data={data}
+          defaultColor={puskeswanColors[puskeswan] || defaultColor}
+          showAll={true}
+        />
+      ))}
     </div>
   );
 }
