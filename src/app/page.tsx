@@ -57,10 +57,10 @@ export default function Home() {
           </CardHeader>
         </Card>
         <div className="mt-6 md:mt-8">
-          <ServiceForm formType="vaksinasi" />
+          <ExcelUpload />
         </div>
         <div className="mt-6 md:mt-8">
-          <ExcelUpload />
+          <ServiceForm formType="vaksinasi" />
         </div>
       </div>
     </div>
