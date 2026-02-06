@@ -325,12 +325,6 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
   return (
     <div className="space-y-6">
       <StatChart
-        title="Statistik Vaksinasi"
-        data={statsByVaccine}
-        defaultColor="#4682B4"
-        showAll={true}
-      />
-      <StatChart
         title="Statistik per Bulan"
         data={statsByMonth}
         officerToPuskeswanMap={officerToPuskeswanMap}
@@ -350,6 +344,12 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
         data={statsByPuskeswan}
         colors={puskeswanColors}
         defaultColor={defaultColor}
+      />
+      <StatChart
+        title="Statistik Vaksinasi"
+        data={statsByVaccine}
+        defaultColor="#4682B4"
+        showAll={true}
       />
     </div>
   );
