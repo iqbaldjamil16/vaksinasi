@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -7,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Copy, Check } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { ExcelUpload } from '@/components/excel-upload';
 
 export default function Home() {
   const { toast } = useToast();
@@ -58,6 +58,9 @@ export default function Home() {
         </Card>
         <div className="mt-6 md:mt-8">
           <ServiceForm formType="vaksinasi" />
+        </div>
+        <div className="mt-6 md:mt-8">
+          <ExcelUpload />
         </div>
       </div>
     </div>
