@@ -302,33 +302,6 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
   };
   const defaultColor = '#808080';
 
-  const caseStatusColors = {
-    Sembuh: '#006400',
-    'Tidak Sembuh': '#FFFF00',
-    Mati: '#FF0000',
-  };
-  const defaultCaseStatusColor = '#808080';
-
-  function calculateCaseDevelopmentStats(
-    services: HealthcareService[]
-  ): StatItem[] {
-    const stats: { [key: string]: number } = {};
-    services.forEach((service) => {
-      if (service.caseDevelopments) {
-        service.caseDevelopments.forEach((dev) => {
-          if (dev.status) {
-            stats[dev.status] = (stats[dev.status] || 0) + dev.count;
-          }
-        });
-      }
-    });
-    return Object.entries(stats)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }
-
-  const caseDevelopmentStats = calculateCaseDevelopmentStats(services);
-
   return (
     <div className="space-y-6">
       <StatChart
@@ -352,14 +325,6 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
         colors={puskeswanColors}
         defaultColor={defaultColor}
       />
-      {caseDevelopmentStats.length > 0 && (
-        <StatPieChart
-          title="Statistik Perkembangan Kasus"
-          data={caseDevelopmentStats}
-          colors={caseStatusColors}
-          defaultColor={defaultCaseStatusColor}
-        />
-      )}
     </div>
   );
 }
