@@ -106,7 +106,7 @@ export default function RekapTopoyoPage() {
     const [isPending, startTransition] = useTransition();
     const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
     const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
-    const { firestore } = useFirebase();
+    const { firestore, isUserLoading: isAuthLoading } = useFirebase();
     const router = useRouter();
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -137,7 +137,7 @@ export default function RekapTopoyoPage() {
     }, []);
 
     const servicesQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || isAuthLoading) return null;
         
         const year = selectedYear === 'all-years' ? null : parseInt(selectedYear, 10);
         const month = selectedMonth === 'all-months' || selectedMonth === '' ? null : parseInt(selectedMonth, 10);
@@ -161,7 +161,7 @@ export default function RekapTopoyoPage() {
         }
 
         return query(servicesCollection, ...queryConstraints);
-      }, [firestore, selectedYear, selectedMonth]);
+      }, [firestore, selectedYear, selectedMonth, isAuthLoading]);
 
     const { data: rawServices, isLoading: loading } = useCollection<any>(servicesQuery);
     

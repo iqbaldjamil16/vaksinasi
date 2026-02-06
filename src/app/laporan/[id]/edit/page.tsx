@@ -33,13 +33,13 @@ export default function EditServicePage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { firestore } = useFirebase();
+  const { firestore, isUserLoading: isAuthLoading } = useFirebase();
   const [service, setService] = useState<HealthcareService | null>(null);
 
   const docRef = useMemoFirebase(() => {
-    if (!id || !firestore) return null;
+    if (!id || !firestore || isAuthLoading) return null;
     return doc(firestore, 'healthcareServices', id);
-  }, [id, firestore]);
+  }, [id, firestore, isAuthLoading]);
 
   const { data: rawService, isLoading: loading, error } = useDoc<any>(docRef);
 

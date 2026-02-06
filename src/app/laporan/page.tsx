@@ -68,7 +68,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 export default function ReportPage() {
   const router = useRouter();
-  const { firestore } = useFirebase();
+  const { firestore, isUserLoading: isAuthLoading } = useFirebase();
   const [filteredServices, setFilteredServices] = useState<HealthcareService[]>([]);
   const [isPending, startTransition] = useTransition();
   const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
@@ -100,7 +100,7 @@ export default function ReportPage() {
   }, []);
   
   const servicesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || isAuthLoading) return null;
 
     const year = selectedYear === 'all-years' || selectedYear === '' ? null : parseInt(selectedYear, 10);
     const month = selectedMonth === 'all-months' || selectedMonth === '' ? null : parseInt(selectedMonth, 10);
@@ -121,7 +121,7 @@ export default function ReportPage() {
     }
 
     return query(servicesCollection, ...queryConstraints);
-  }, [firestore, selectedYear, selectedMonth]);
+  }, [firestore, selectedYear, selectedMonth, isAuthLoading]);
 
   const { data: rawServices, isLoading: loading } = useCollection<any>(servicesQuery);
 
