@@ -136,6 +136,7 @@ export function Header() {
         <nav className="flex items-center">
          <Link
             href="/laporan"
+            prefetch={false}
             className={cn(
                 buttonVariants({ variant: 'outline', size: 'default' }),
                 'text-sm font-semibold transition-colors flex items-center gap-2',
