@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState } from 'react';
 import { ServiceForm } from "@/components/service-form";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Loader2 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ExcelUpload } from '@/components/excel-upload';
@@ -11,6 +12,7 @@ import { ExcelUpload } from '@/components/excel-upload';
 export default function Home() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const linkToCopy = "https://newkeswan.vercel.app/";
 
   const handleCopy = () => {
@@ -33,7 +35,7 @@ export default function Home() {
 
   return (
     <div className="container px-3 sm:px-8 py-4 md:py-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
         <Card>
           <CardHeader>
               <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Pelayanan Vaksinasi</CardTitle>
@@ -57,12 +59,30 @@ export default function Home() {
           </CardHeader>
         </Card>
         
-        <div className="mt-6 md:mt-8">
-          <ServiceForm formType="vaksinasi" />
+        <div>
+          <ServiceForm 
+            formType="vaksinasi" 
+            showSubmitButton={false} 
+            formId="main-keswan-form"
+            onSubmittingChange={setIsFormSubmitting}
+          />
         </div>
 
-        <div className="mt-6 md:mt-8">
+        <div>
           <ExcelUpload />
+        </div>
+
+        <div className="flex justify-end">
+          <Button 
+            type="submit" 
+            form="main-keswan-form" 
+            size="lg"
+            className="w-full md:w-auto min-w-[200px]"
+            disabled={isFormSubmitting}
+          >
+            {isFormSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Simpan Data
+          </Button>
         </div>
       </div>
     </div>

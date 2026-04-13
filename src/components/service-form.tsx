@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,12 +39,28 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
 
-export function ServiceForm({ initialData, formType }: { initialData?: HealthcareService, formType?: 'keswan' | 'vaksinasi' }) {
+export function ServiceForm({ 
+  initialData, 
+  formType, 
+  showSubmitButton = true, 
+  formId,
+  onSubmittingChange 
+}: { 
+  initialData?: HealthcareService, 
+  formType?: 'keswan' | 'vaksinasi',
+  showSubmitButton?: boolean,
+  formId?: string,
+  onSubmittingChange?: (isSubmitting: boolean) => void
+}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const router = useRouter();
   const isEditMode = !!initialData;
+
+  useEffect(() => {
+    onSubmittingChange?.(isSubmitting);
+  }, [isSubmitting, onSubmittingChange]);
 
   const form = useForm<HealthcareService>({
     resolver: zodResolver(serviceSchema),
@@ -201,7 +217,7 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           <div className="space-y-4 md:space-y-6">
             <Card>
@@ -809,21 +825,15 @@ export function ServiceForm({ initialData, formType }: { initialData?: Healthcar
             )}
           </div>
         </div>
-        <div className="flex justify-start md:justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditMode ? 'Simpan Perubahan' : 'Simpan Data'}
-          </Button>
-        </div>
+        {showSubmitButton && (
+          <div className="flex justify-start md:justify-end">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEditMode ? 'Simpan Perubahan' : 'Simpan Data'}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );
 }
-    
-    
-
-    
-
-    
-
-    
