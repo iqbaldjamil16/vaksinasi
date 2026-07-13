@@ -13,7 +13,7 @@ export default function Home() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
-  const linkToCopy = "https://newkeswan.vercel.app/";
+  const linkToCopy = "http://vaksinasi.vercel.app";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(linkToCopy).then(() => {
