@@ -201,7 +201,7 @@ export const genderOptions = [
 ];
 
 export const ageUnits = [
-  'Hari',
+  'Minggu',
   'Bulan',
   'Tahun',
 ];
