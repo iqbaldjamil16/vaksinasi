@@ -405,7 +405,7 @@ export function ServiceForm({
                     <FormItem>
                       <FormLabel>NIK KTP <span className="text-xs italic font-normal text-muted-foreground">(Opsional)</span></FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="Contoh: 7604..." {...field} />
+                        <Input placeholder="Contoh: 7604..." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
