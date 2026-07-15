@@ -127,7 +127,7 @@ export function ServiceForm({
     'Puskeswan Budong-Budong': budongBudongDesaList,
     'Puskeswan Pangale': pangaleDesaList,
     'Puskeswan Tobadak': tobadakDesaList,
-    'Puskeswan Topoyo': topoyoDesaList,
+    'Puskeswan Topoyo': topoyoOfficerList,
   };
   const desaList = desaListMap[watchedPuskeswan] || [];
   const isDesaSelection = desaList.length > 0;
@@ -557,26 +557,6 @@ export function ServiceForm({
                           />
                           <FormField
                             control={form.control}
-                            name={`vaccinations.${index}.animalCount`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Jumlah</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    placeholder="Jumlah"
-                                    {...field}
-                                    onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                           <FormField
-                            control={form.control}
                             name={`vaccinations.${index}.gender`}
                             render={({ field }) => (
                               <FormItem>
@@ -597,6 +577,8 @@ export function ServiceForm({
                               </FormItem>
                             )}
                           />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <div className="grid grid-cols-2 gap-1">
                             <FormField
                                 control={form.control}
@@ -639,6 +621,24 @@ export function ServiceForm({
                                 )}
                             />
                           </div>
+                          <FormField
+                            control={form.control}
+                            name={`vaccinations.${index}.animalCount`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Jumlah</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    placeholder="Jumlah"
+                                    {...field}
+                                    onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
                       </div>
                     </Card>
