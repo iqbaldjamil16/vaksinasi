@@ -488,7 +488,7 @@ export function ServiceForm({
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       )}
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="flex flex-col gap-4">
                         <FormField
                             control={form.control}
                             name={`vaccinations.${index}.vaccineName`}
@@ -532,114 +532,110 @@ export function ServiceForm({
                                 </FormItem>
                             )}
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                           <FormField
-                            control={form.control}
-                            name={`vaccinations.${index}.animalType`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Jenis Hewan</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Pilih Jenis" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {livestockTypes.map((type) => (
-                                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`vaccinations.${index}.gender`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Jenis Kelamin <span className="text-xs italic font-normal text-muted-foreground">(Opsional)</span></FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Pilih Kelamin" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {genderOptions.map((option) => (
-                                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="grid grid-cols-2 gap-1">
-                            <FormField
-                                control={form.control}
-                                name={`vaccinations.${index}.age`}
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Umur <span className="text-xs italic font-normal text-muted-foreground">(Opsional)</span></FormLabel>
-                                    <FormControl>
-                                    <Input
-                                        type="number"
-                                        placeholder="0"
-                                        {...field}
-                                        onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                                    />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name={`vaccinations.${index}.ageUnit`}
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="opacity-0">Unit</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                        <SelectValue placeholder="Unit" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {ageUnits.map((unit) => (
-                                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                          </div>
-                          <FormField
-                            control={form.control}
-                            name={`vaccinations.${index}.animalCount`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Jumlah</FormLabel>
+                        <FormField
+                          control={form.control}
+                          name={`vaccinations.${index}.animalType`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Jenis Hewan</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                  <Input
-                                    type="number"
-                                    placeholder="Jumlah"
-                                    {...field}
-                                    onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                                  />
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Pilih Jenis" />
+                                  </SelectTrigger>
                                 </FormControl>
-                                <FormMessage />
+                                <SelectContent>
+                                  {livestockTypes.map((type) => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`vaccinations.${index}.gender`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Jenis Kelamin <span className="text-xs italic font-normal text-muted-foreground">(Opsional)</span></FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Pilih Kelamin" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {genderOptions.map((option) => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <FormField
+                              control={form.control}
+                              name={`vaccinations.${index}.age`}
+                              render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Umur <span className="text-xs italic font-normal text-muted-foreground">(Opsional)</span></FormLabel>
+                                  <FormControl>
+                                  <Input
+                                      type="number"
+                                      placeholder="0"
+                                      {...field}
+                                      onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                                  />
+                                  </FormControl>
+                                  <FormMessage />
                               </FormItem>
-                            )}
+                              )}
+                          />
+                          <FormField
+                              control={form.control}
+                              name={`vaccinations.${index}.ageUnit`}
+                              render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="opacity-0">Unit</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                      <SelectTrigger>
+                                      <SelectValue placeholder="Unit" />
+                                      </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                      {ageUnits.map((unit) => (
+                                      <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                              </FormItem>
+                              )}
                           />
                         </div>
+                        <FormField
+                          control={form.control}
+                          name={`vaccinations.${index}.animalCount`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Jumlah</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder="Jumlah"
+                                  {...field}
+                                  onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </Card>
                   )})}
