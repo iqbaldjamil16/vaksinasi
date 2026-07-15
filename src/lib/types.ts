@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const treatmentSchema = z.object({
@@ -17,6 +16,9 @@ export const vaccinationDetailSchema = z.object({
   vaccineName: z.string().min(1, "Jenis vaksin wajib diisi."),
   animalType: z.string().min(1, "Jenis hewan wajib diisi."),
   animalCount: z.coerce.number().min(1, "Jumlah hewan harus minimal 1."),
+  gender: z.string().optional().or(z.literal("")),
+  age: z.coerce.number().optional().or(z.literal("")),
+  ageUnit: z.string().optional().or(z.literal("")),
 });
 
 

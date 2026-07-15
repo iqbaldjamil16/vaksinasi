@@ -1,4 +1,3 @@
-
 export const puskeswanList = [
   'Puskeswan Budong-Budong',
   'Puskeswan Karossa',
@@ -194,6 +193,17 @@ export const livestockTypes = [
   'Sapi Limosin',
   'Sapi Simental',
   'Lainnya',
+];
+
+export const genderOptions = [
+  'Jantan',
+  'Betina',
+];
+
+export const ageUnits = [
+  'Hari',
+  'Bulan',
+  'Tahun',
 ];
 
 export const dosageUnits = [

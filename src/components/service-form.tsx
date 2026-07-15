@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,7 +11,7 @@ import { doc, collection, Timestamp, setDoc } from 'firebase/firestore';
 
 import { cn } from "@/lib/utils";
 import { serviceSchema, type HealthcareService } from "@/lib/types";
-import { livestockTypes, puskeswanList, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions, vaccinationPrograms, vaccineLists } from "@/lib/definitions";
+import { livestockTypes, puskeswanList, dosageUnits, karossaDesaList, budongBudongDesaList, pangaleDesaList, tobadakDesaList, topoyoDesaList, budongBudongOfficerList, karossaOfficerList, pangaleOfficerList, tobadakOfficerList, topoyoOfficerList, caseStatusOptions, vaccinationPrograms, vaccineLists, genderOptions, ageUnits } from "@/lib/definitions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -76,7 +75,7 @@ export function ServiceForm({
       nik: "",
       phoneNumber: "",
       vaccinationProgram: "",
-      vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1 }],
+      vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1, gender: "", age: "", ageUnit: "Tahun" }],
       treatments: [],
       caseDevelopments: formType === 'vaksinasi' ? [] : [{ status: "", count: 1 }],
     },
@@ -575,6 +574,72 @@ export function ServiceForm({
                             )}
                           />
                         </div>
+                        <div className="grid grid-cols-2 gap-2">
+                           <FormField
+                            control={form.control}
+                            name={`vaccinations.${index}.gender`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Jenis Kelamin <span className="text-xs italic font-normal text-muted-foreground">(Opsional)</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Pilih Kelamin" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {genderOptions.map((option) => (
+                                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="grid grid-cols-2 gap-1">
+                            <FormField
+                                control={form.control}
+                                name={`vaccinations.${index}.age`}
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Umur <span className="text-xs italic font-normal text-muted-foreground">(Opsional)</span></FormLabel>
+                                    <FormControl>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        {...field}
+                                        onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                                    />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name={`vaccinations.${index}.ageUnit`}
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="opacity-0">Unit</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Unit" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {ageUnits.map((unit) => (
+                                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </Card>
                   )})}
@@ -584,7 +649,7 @@ export function ServiceForm({
                       variant="default"
                       size="sm"
                       onClick={() => {
-                        appendVaccination({ vaccineName: '', animalType: '', animalCount: 1 });
+                        appendVaccination({ vaccineName: '', animalType: '', animalCount: 1, gender: '', age: '', ageUnit: 'Tahun' });
                         setShowManualVaccineName([...showManualVaccineName, false]);
                       }}
                     >
