@@ -77,7 +77,7 @@ export default function Home() {
             type="submit" 
             form="main-keswan-form" 
             size="lg"
-            className="w-full md:w-auto min-w-[200px]"
+            className="w-fit md:w-auto md:min-w-[200px]"
             disabled={isFormSubmitting}
           >
             {isFormSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
