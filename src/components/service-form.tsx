@@ -125,7 +125,7 @@ export function ServiceForm({
     'Puskeswan Budong-Budong': budongBudongDesaList,
     'Puskeswan Pangale': pangaleDesaList,
     'Puskeswan Tobadak': tobadakDesaList,
-    'Puskeswan Topoyo': topoyoOfficerList,
+    'Puskeswan Topoyo': topoyoDesaList,
   };
   const desaList = desaListMap[watchedPuskeswan] || [];
   const isDesaSelection = desaList.length > 0;
