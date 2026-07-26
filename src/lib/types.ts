@@ -13,7 +13,7 @@ export const caseDevelopmentEntrySchema = z.object({
 });
 
 export const vaccinationDetailSchema = z.object({
-  vaccineName: z.string().min(1, "Jenis vaksin wajib diisi."),
+  vaccineName: z.string().optional().or(z.literal("")),
   animalType: z.string().min(1, "Jenis hewan wajib diisi."),
   animalCount: z.coerce.number().min(1, "Jumlah hewan harus minimal 1."),
   gender: z.string().optional().or(z.literal("")),
@@ -41,6 +41,7 @@ export const serviceSchema = z.object({
   }),
   
   vaccinationProgram: z.string().min(1, "Program vaksinasi wajib diisi."),
+  vaccineName: z.string().min(1, "Jenis vaksin wajib diisi."),
   
   vaccinations: z.array(vaccinationDetailSchema).min(1, "Minimal satu detail vaksinasi harus ditambahkan."),
   

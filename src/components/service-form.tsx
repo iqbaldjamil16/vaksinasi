@@ -66,6 +66,7 @@ export function ServiceForm({
     defaultValues: initialData ? {
       ...initialData,
       date: initialData.date ? new Date(initialData.date) : new Date(),
+      vaccineName: initialData.vaccineName || initialData.vaccinations?.[0]?.vaccineName || "",
     } : {
       date: new Date(),
       puskeswan: "",
@@ -75,6 +76,7 @@ export function ServiceForm({
       nik: "",
       phoneNumber: "",
       vaccinationProgram: "",
+      vaccineName: "",
       vaccinations: [{ vaccineName: "", animalType: "", animalCount: 1, gender: "", age: "", ageUnit: "Tahun" }],
       treatments: [],
       caseDevelopments: formType === 'vaksinasi' ? [] : [{ status: "", count: 1 }],
@@ -96,17 +98,13 @@ export function ServiceForm({
     name: "vaccinations",
   });
 
-  const [showManualVaccineName, setShowManualVaccineName] = useState<boolean[]>(
-    initialData?.vaccinations.map(v => {
-      const program = initialData.vaccinationProgram || '';
-      const list = vaccineLists[program] || [];
-      return !list.includes(v.vaccineName);
-    }) || []
-  );
-
   const watchedPuskeswan = form.watch("puskeswan");
   const watchedVaccinationProgram = form.watch("vaccinationProgram");
-  const watchedTreatments = form.watch("treatments");
+  const watchedVaccineName = form.watch("vaccineName");
+
+  const [showManualVaccineName, setShowManualVaccineName] = useState<boolean>(
+    initialData ? ! (vaccineLists[initialData.vaccinationProgram || ''] || []).includes(initialData.vaccineName || initialData.vaccinations?.[0]?.vaccineName || '') : false
+  );
 
   const officerListMap: Record<string, string[]> = {
     'Puskeswan Budong-Budong': budongBudongOfficerList,
@@ -132,7 +130,6 @@ export function ServiceForm({
   const desaList = desaListMap[watchedPuskeswan] || [];
   const isDesaSelection = desaList.length > 0;
   
-  const watchedOwnerAddress = form.watch('ownerAddress');
   const [showManualOwnerAddress, setShowManualOwnerAddress] = useState(
     initialData ? isDesaSelection && !desaList.includes(initialData.ownerAddress) : false
   );
@@ -151,8 +148,15 @@ export function ServiceForm({
 
     const { id, caseDevelopment, ...dataToSave } = values;
     
+    // Apply the global vaccine name to all vaccination details
+    const updatedVaccinations = dataToSave.vaccinations.map(v => ({
+      ...v,
+      vaccineName: dataToSave.vaccineName
+    }));
+
     const serviceData = {
       ...dataToSave,
+      vaccinations: updatedVaccinations,
       date: Timestamp.fromDate(values.date),
     };
 
@@ -426,7 +430,7 @@ export function ServiceForm({
               </CardContent>
             </Card>
              <Card>
-                <CardContent className="p-4">
+                <CardContent className="p-4 space-y-4">
                   <FormField
                     control={form.control}
                     name="vaccinationProgram"
@@ -436,10 +440,8 @@ export function ServiceForm({
                         <Select
                           onValueChange={(value) => {
                             field.onChange(value);
-                            form.getValues('vaccinations').forEach((_, index) => {
-                              form.setValue(`vaccinations.${index}.vaccineName`, '');
-                            });
-                            setShowManualVaccineName(form.getValues('vaccinations').map(() => false));
+                            form.setValue('vaccineName', '');
+                            setShowManualVaccineName(false);
                           }}
                           value={field.value}
                         >
@@ -458,24 +460,72 @@ export function ServiceForm({
                       </FormItem>
                     )}
                   />
+                  
+                  <FormField
+                    control={form.control}
+                    name="vaccineName"
+                    render={({ field }) => {
+                      const vaccineOptions = vaccineLists[watchedVaccinationProgram] || [];
+                      const isManualInput = showManualVaccineName || watchedVaccinationProgram === 'Lainnya' || (watchedVaccinationProgram !== '' && vaccineOptions.length === 0);
+
+                      return (
+                        <FormItem>
+                          <FormLabel>Jenis Vaksin</FormLabel>
+                          {isManualInput ? (
+                            <FormControl>
+                              <Input
+                                placeholder="Isi jenis vaksin"
+                                {...field}
+                              />
+                            </FormControl>
+                          ) : (
+                            <Select
+                              onValueChange={(value) => {
+                                if (value === 'Lainnya') {
+                                  setShowManualVaccineName(true);
+                                  field.onChange('');
+                                } else {
+                                  field.onChange(value);
+                                }
+                              }}
+                              value={field.value}
+                              disabled={!watchedVaccinationProgram}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={watchedVaccinationProgram ? "Pilih Jenis Vaksin" : "Pilih Program Terlebih Dahulu"} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {vaccineOptions.map((vaccine) => (
+                                  <SelectItem key={vaccine} value={vaccine}>{vaccine}</SelectItem>
+                                ))}
+                                <SelectItem value="Lainnya">Lainnya (Input Manual)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
                 </CardContent>
               </Card>
+          </div>
+
+          <div className="space-y-4 md:space-y-6">
              <Card>
               <CardContent className="p-4">
                 <div className="space-y-4">
                   <div>
                     <Label>
-                      Vaksinasi
+                      Detail Hewan
                       <span className="ml-2 text-xs italic font-normal text-muted-foreground">
-                        (Detail hewan dan vaksin yang diberikan)
+                        (Informasi ternak yang divaksinasi)
                       </span>
                     </Label>
                   </div>
-                  {vaccinationFields.map((item, index) => {
-                    const vaccineOptions = vaccineLists[watchedVaccinationProgram] || [];
-                    const isManualInput = showManualVaccineName[index] || watchedVaccinationProgram === 'Lainnya' || vaccineOptions.length === 0;
-
-                    return (
+                  {vaccinationFields.map((item, index) => (
                     <Card key={item.id} className="relative p-4 bg-card">
                       {vaccinationFields.length > 1 && (
                         <Button
@@ -489,49 +539,6 @@ export function ServiceForm({
                         </Button>
                       )}
                       <div className="flex flex-col gap-4">
-                        <FormField
-                            control={form.control}
-                            name={`vaccinations.${index}.vaccineName`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Jenis Vaksin</FormLabel>
-                                    {isManualInput ? (
-                                        <FormControl>
-                                            <Input
-                                                placeholder="Isi jenis vaksin"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                    ) : (
-                                        <Select
-                                            onValueChange={(value) => {
-                                                if (value === 'Lainnya') {
-                                                    const newShowManual = [...showManualVaccineName];
-                                                    newShowManual[index] = true;
-                                                    setShowManualVaccineName(newShowManual);
-                                                    field.onChange('');
-                                                } else {
-                                                    field.onChange(value);
-                                                }
-                                            }}
-                                            value={field.value}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Pilih Jenis Vaksin" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {vaccineOptions.map((vaccine) => (
-                                                    <SelectItem key={vaccine} value={vaccine}>{vaccine}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
                         <FormField
                           control={form.control}
                           name={`vaccinations.${index}.animalType`}
@@ -638,7 +645,7 @@ export function ServiceForm({
                         />
                       </div>
                     </Card>
-                  )})}
+                  ))}
                   <div className="flex justify-start">
                     <Button
                       type="button"
@@ -646,20 +653,17 @@ export function ServiceForm({
                       size="sm"
                       onClick={() => {
                         appendVaccination({ vaccineName: '', animalType: '', animalCount: 1, gender: '', age: '', ageUnit: 'Tahun' });
-                        setShowManualVaccineName([...showManualVaccineName, false]);
                       }}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Tambah
+                      Tambah Hewan
                     </Button>
                   </div>
                   <FormMessage>{form.formState.errors.vaccinations?.message}</FormMessage>
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          <div className="space-y-4 md:space-y-6">
              {formType !== 'vaksinasi' && (
                 <Card>
                 <CardContent className="p-4">
