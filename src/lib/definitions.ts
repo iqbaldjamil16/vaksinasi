@@ -104,10 +104,10 @@ export const topoyoDesaList = [
 
 export const budongBudongOfficerList = [
     "Anshari Saleh",
-    "Suprapto",
-    "Nur Fauzi",
     "Hadi",
+    "Nur Fauzi",
     "Rahman",
+    "Suprapto",
     "Tadi Sole",
     "Lainnya",
 ].sort((a, b) => {
@@ -117,11 +117,13 @@ export const budongBudongOfficerList = [
 });
 
 export const karossaOfficerList = [
-    "Asari Rasyid",
+    "Asri Rasyid",
+    "Basuki",
     "drh. Stephani",
-    "Basuki Budianto",
     "Hasaruddin",
     "Nasaruddin",
+    "Adiatman",
+    "Surianca",
     "Lainnya",
 ].sort((a, b) => {
     if (a === "Lainnya") return 1;
@@ -130,11 +132,13 @@ export const karossaOfficerList = [
 });
 
 export const pangaleOfficerList = [
+    "Andri",
+    "drh. Ketut Elok",
+    "Jarwo",
+    "Jawaril",
     "Kamarudin",
     "Kamaruddin",
-    "drh. Ketut Elok",
     "Mansyur",
-    "Jawaril",
     "Sugeng",
     "Lainnya",
 ].sort((a, b) => {
@@ -144,10 +148,12 @@ export const pangaleOfficerList = [
 });
 
 export const tobadakOfficerList = [
-    "Endang",
-    "Jupry",
-    "drh. M Ishak",
     "Aser M",
+    "drh. Ishak",
+    "Endang",
+    "Feliks S",
+    "Jupry",
+    "Madalena",
     "Lainnya",
 ].sort((a, b) => {
     if (a === "Lainnya") return 1;
@@ -156,9 +162,11 @@ export const tobadakOfficerList = [
 });
 
 export const topoyoOfficerList = [
-    "drh. Iqbal Djamil",
     "Alfons B",
+    "drh. Iqbal Djamil",
+    "Fitriani",
     "Haslim",
+    "Rizky A",
     "Lainnya",
 ].sort((a, b) => {
     if (a === "Lainnya") return 1;
