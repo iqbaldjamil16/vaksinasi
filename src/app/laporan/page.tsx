@@ -15,7 +15,14 @@ import { Button } from "@/components/ui/button";
 import { CornerUpLeft, Download, LayoutGrid, BarChart2 } from "lucide-react";
 import { type HealthcareService, serviceSchema } from "@/lib/types";
 import { PasswordDialog } from "@/components/password-dialog";
-import { puskeswanList } from "@/lib/definitions";
+import { 
+  puskeswanList, 
+  budongBudongOfficerList, 
+  karossaOfficerList, 
+  pangaleOfficerList, 
+  tobadakOfficerList, 
+  topoyoOfficerList 
+} from "@/lib/definitions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirebase, useMemoFirebase } from "@/firebase/provider";
@@ -66,6 +73,14 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   label: new Date(0, i).toLocaleString('id-ID', { month: 'long' })
 }));
 
+const officerListMap: Record<string, string[]> = {
+  'Puskeswan Budong-Budong': budongBudongOfficerList,
+  'Puskeswan Karossa': karossaOfficerList,
+  'Puskeswan Pangale': pangaleOfficerList,
+  'Puskeswan Tobadak': tobadakOfficerList,
+  'Puskeswan Topoyo': topoyoOfficerList,
+};
+
 export default function ReportPage() {
   const router = useRouter();
   const { firestore, isUserLoading: isAuthLoading } = useFirebase();
@@ -73,6 +88,8 @@ export default function ReportPage() {
   const [isPending, startTransition] = useTransition();
   const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
   const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
+  const [selectedPuskeswan, setSelectedPuskeswan] = useState<string>('all-puskeswan');
+  const [selectedOfficer, setSelectedOfficer] = useState<string>('all-officers');
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIds, setHighlightedIds] = useState<string[]>([]);
 
@@ -169,10 +186,24 @@ export default function ReportPage() {
       return fetchedServices;
   }, [rawServices]);
 
+  const currentOfficerList = useMemo(() => {
+    if (selectedPuskeswan === 'all-puskeswan') return [];
+    return officerListMap[selectedPuskeswan] || [];
+  }, [selectedPuskeswan]);
 
   useEffect(() => {
     startTransition(() => {
       let servicesToFilter = services;
+
+      // Filter by Puskeswan
+      if (selectedPuskeswan !== 'all-puskeswan') {
+        servicesToFilter = servicesToFilter.filter(s => s.puskeswan === selectedPuskeswan);
+      }
+
+      // Filter by Officer
+      if (selectedOfficer !== 'all-officers') {
+        servicesToFilter = servicesToFilter.filter(s => s.officerName === selectedOfficer);
+      }
 
       const lowercasedFilter = searchTerm.toLowerCase();
       if (lowercasedFilter) {
@@ -203,7 +234,7 @@ export default function ReportPage() {
 
       setFilteredServices(servicesToFilter);
     });
-  }, [searchTerm, services, highlightedIds]);
+  }, [searchTerm, services, highlightedIds, selectedPuskeswan, selectedOfficer]);
 
   const handleLocalDelete = (serviceId: string) => {
     setFilteredServices((currentServices) =>
@@ -220,7 +251,12 @@ export default function ReportPage() {
   const handleDownload = () => {
     const wb = XLSX.utils.book_new();
 
-    puskeswanList.forEach((puskeswan) => {
+    // Get relevant Puskeswans based on filter
+    const relevantPuskeswanList = selectedPuskeswan === 'all-puskeswan' 
+      ? puskeswanList 
+      : [selectedPuskeswan];
+
+    relevantPuskeswanList.forEach((puskeswan) => {
       const servicesByPuskeswan = filteredServices.filter(
         (s) => s.puskeswan === puskeswan
       );
@@ -290,8 +326,10 @@ export default function ReportPage() {
       selectedYear === 'all-years' || selectedYear === ''
         ? getYear(new Date()).toString()
         : selectedYear;
+
+    const officerLabel = selectedOfficer === 'all-officers' ? '' : `_${selectedOfficer.replace(/\s+/g, '_')}`;
   
-    XLSX.writeFile(wb, `laporan_pelayanan_${monthLabel}_${yearLabel}.xlsx`);
+    XLSX.writeFile(wb, `laporan_pelayanan_${monthLabel}_${yearLabel}${officerLabel}.xlsx`);
   };
 
   return (
@@ -327,40 +365,69 @@ export default function ReportPage() {
       
       <Tabs defaultValue="tabel" className="w-full">
         <Card className="p-4 sm:p-6 pb-0">
-          <CardContent className="p-0">
-              <div className="grid grid-cols-2 md:flex md:justify-end gap-2">
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pilih Bulan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="all-months">Semua Bulan</SelectItem>
-                      {months.map((month) => (
-                      <SelectItem key={month.value} value={month.value}>
-                          {month.label}
-                      </SelectItem>
+          <CardContent className="p-0 space-y-4">
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <Select value={selectedPuskeswan} onValueChange={(val) => {
+                    setSelectedPuskeswan(val);
+                    setSelectedOfficer('all-officers');
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Semua Puskeswan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-puskeswan">Semua Puskeswan</SelectItem>
+                      {puskeswanList.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
                       ))}
-                  </SelectContent>
+                    </SelectContent>
                   </Select>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pilih Tahun" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="all-years">Semua Tahun</SelectItem>
-                      {years.map((year) => (
-                      <SelectItem key={year} value={year}>
-                          {year}
-                      </SelectItem>
+                  <Select value={selectedOfficer} onValueChange={setSelectedOfficer} disabled={selectedPuskeswan === 'all-puskeswan'}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Semua Petugas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-officers">Semua Petugas</SelectItem>
+                      {currentOfficerList.map((o) => (
+                        <SelectItem key={o} value={o}>{o}</SelectItem>
                       ))}
-                  </SelectContent>
+                    </SelectContent>
                   </Select>
-                  <Input
-                  placeholder="Cari data..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full col-span-2 md:w-64"
-                  />
+                </div>
+                <div className="grid grid-cols-2 md:flex md:justify-end gap-2">
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Pilih Bulan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all-months">Semua Bulan</SelectItem>
+                        {months.map((month) => (
+                        <SelectItem key={month.value} value={month.value}>
+                            {month.label}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Pilih Tahun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all-years">Semua Tahun</SelectItem>
+                        {years.map((year) => (
+                        <SelectItem key={year} value={year}>
+                            {year}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <Input
+                    placeholder="Cari data..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full col-span-2 md:w-64"
+                    />
+                </div>
               </div>
               <div className="pt-4">
                   <TabsList className="grid w-full grid-cols-2">
@@ -403,43 +470,3 @@ export default function ReportPage() {
     </div>
   );
 }
-    
-
-    
-
-
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-    
-
-    
-
-    
