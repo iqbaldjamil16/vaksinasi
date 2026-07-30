@@ -69,6 +69,9 @@ function ReportSkeleton() {
               <TableHead>
                 <Skeleton className="h-5 w-full" />
               </TableHead>
+              <TableHead>
+                <Skeleton className="h-5 w-full" />
+              </TableHead>
               <TableHead className="w-[100px]">
                 <Skeleton className="h-5 w-full" />
               </TableHead>
@@ -76,17 +79,17 @@ function ReportSkeleton() {
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={6}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={6}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={6}>
                 <Skeleton className="h-10 w-full" />
               </TableCell>
             </TableRow>
@@ -171,14 +174,22 @@ function ServiceCard({
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="p-4 pt-0 space-y-3">
-            <div>
-              <div className="text-xs font-semibold text-muted-foreground">
-                Pemilik
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground">
+                  Pemilik
+                </div>
+                <p className="text-sm">{service.ownerName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {service.ownerAddress}
+                </p>
               </div>
-              <p className="text-sm">{service.ownerName}</p>
-              <p className="text-xs text-muted-foreground">
-                {service.ownerAddress}
-              </p>
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground">
+                  Program
+                </div>
+                <p className="text-sm font-medium">{service.vaccinationProgram}</p>
+              </div>
             </div>
             <div>
               <div className="text-xs font-semibold text-muted-foreground">
@@ -187,7 +198,7 @@ function ServiceCard({
                <div className="flex flex-wrap gap-1 mt-1">
                 {service.vaccinations.map((v, index) => (
                   <Badge key={index} variant="secondary">
-                    {v.animalType} ({v.animalCount}){v.gender ? ` (${v.gender})` : ''}{v.age ? ` - ${v.age} ${v.ageUnit || ''}` : ''} - {v.vaccineName}
+                    {v.animalType} ({v.animalCount}) {v.age ? `- ${v.age} ${v.ageUnit || ''} ` : ''}- {v.vaccineName}
                   </Badge>
                 ))}
               </div>
@@ -354,6 +365,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
             <TableRow>
               <TableHead className="w-[120px]">Tanggal</TableHead>
               <TableHead>Pemilik</TableHead>
+              <TableHead>Program</TableHead>
               <TableHead>Vaksinasi</TableHead>
               <TableHead>Petugas</TableHead>
               <TableHead className="w-[100px] text-center">Aksi</TableHead>
@@ -375,10 +387,13 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
                     </div>
                   </TableCell>
                   <TableCell className="align-top">
+                    <div className="font-medium">{service.vaccinationProgram}</div>
+                  </TableCell>
+                  <TableCell className="align-top">
                      <div className="flex flex-wrap gap-1">
                       {service.vaccinations.map((v, index) => (
                         <Badge key={index} variant="secondary">
-                          {v.animalType} ({v.animalCount}){v.gender ? ` (${v.gender})` : ''}{v.age ? ` - ${v.age} ${v.ageUnit || ''}` : ''} - {v.vaccineName}
+                          {v.animalType} ({v.animalCount}) {v.age ? `- ${v.age} ${v.ageUnit || ''} ` : ''}- {v.vaccineName}
                         </Badge>
                       ))}
                     </div>
@@ -399,7 +414,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <PawPrint className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">
