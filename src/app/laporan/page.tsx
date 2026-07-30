@@ -263,7 +263,17 @@ export default function ReportPage() {
       });
 
       const allDataForSheet: any[] = [];
-      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Program Vaksinasi', 'Jenis Vaksin', 'Jenis Hewan', 'Jenis Kelamin', 'Umur', 'Jumlah Hewan'];
+      const headers = [
+        'Tanggal', 
+        'Nama Pemilik', 
+        'Alamat Pemilik', 
+        'Program Vaksinasi', 
+        'Jenis Vaksin', 
+        'Jenis Hewan', 
+        'Jenis Kelamin', 
+        'Umur', 
+        'Jumlah Hewan'
+      ];
       const officerNames = Object.keys(servicesByOfficer).sort();
 
       officerNames.forEach(officerName => {
@@ -271,25 +281,48 @@ export default function ReportPage() {
         allDataForSheet.push({});
         allDataForSheet.push({ 'Nama Petugas': officerName });
         allDataForSheet.push(Object.fromEntries(headers.map(h => [h, h])));
-        const data = servicesByOfficer[officerName].map((service) => {
-          const animalTypes = service.vaccinations.map(v => v.animalType).join(', ');
-          const animalCounts = service.vaccinations.map(v => v.animalCount).join(', ');
-          const genders = service.vaccinations.map(v => v.gender || '-').join(', ');
-          const ages = service.vaccinations.map(v => v.age ? `${v.age} ${v.ageUnit || ''}` : '-').join(', ');
+        
+        servicesByOfficer[officerName].forEach((service) => {
+          // Kelompokkan data hewan berdasarkan jenis, kelamin, dan umur
+          const groupedVaccinations: Record<string, { 
+            animalType: string, 
+            gender: string, 
+            age: string, 
+            animalCount: number 
+          }> = {};
 
-          return {
-            'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
-            'Nama Pemilik': service.ownerName,
-            'Alamat Pemilik': service.ownerAddress,
-            'Program Vaksinasi': service.vaccinationProgram,
-            'Jenis Vaksin': service.vaccineName,
-            'Jenis Hewan': animalTypes,
-            'Jenis Kelamin': genders,
-            'Umur': ages,
-            'Jumlah Hewan': animalCounts,
-          };
+          service.vaccinations.forEach(v => {
+            const genderStr = v.gender || '-';
+            const ageStr = v.age ? `${v.age} ${v.ageUnit || ''}` : '-';
+            const key = `${v.animalType}|${genderStr}|${ageStr}`;
+
+            if (groupedVaccinations[key]) {
+              groupedVaccinations[key].animalCount += v.animalCount;
+            } else {
+              groupedVaccinations[key] = {
+                animalType: v.animalType,
+                gender: genderStr,
+                age: ageStr,
+                animalCount: v.animalCount
+              };
+            }
+          });
+
+          // Buat baris masing-masing untuk setiap kelompok yang berbeda
+          Object.values(groupedVaccinations).forEach(group => {
+            allDataForSheet.push({
+              'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
+              'Nama Pemilik': service.ownerName,
+              'Alamat Pemilik': service.ownerAddress,
+              'Program Vaksinasi': service.vaccinationProgram,
+              'Jenis Vaksin': service.vaccineName,
+              'Jenis Hewan': group.animalType,
+              'Jenis Kelamin': group.gender,
+              'Umur': group.age,
+              'Jumlah Hewan': group.animalCount,
+            });
+          });
         });
-        allDataForSheet.push(...data);
       });
 
       const sheetName = puskeswan.replace('Puskeswan ', '').replace(/[/\\?*:[\]]/g, '');
