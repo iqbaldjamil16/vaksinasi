@@ -187,7 +187,7 @@ function ServiceCard({
                <div className="flex flex-wrap gap-1 mt-1">
                 {service.vaccinations.map((v, index) => (
                   <Badge key={index} variant="secondary">
-                    {v.animalType} ({v.animalCount}) - {v.vaccineName} {v.gender ? `(${v.gender})` : ''} {v.age ? `- ${v.age} ${v.ageUnit || ''}` : ''}
+                    {v.animalType} ({v.animalCount}){v.gender ? ` (${v.gender})` : ''}{v.age ? ` - ${v.age} ${v.ageUnit || ''}` : ''} - {v.vaccineName}
                   </Badge>
                 ))}
               </div>
@@ -378,7 +378,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
                      <div className="flex flex-wrap gap-1">
                       {service.vaccinations.map((v, index) => (
                         <Badge key={index} variant="secondary">
-                          {v.animalType} ({v.animalCount}) - {v.vaccineName} {v.gender ? `(${v.gender})` : ''} {v.age ? `- ${v.age} ${v.ageUnit || ''}` : ''}
+                          {v.animalType} ({v.animalCount}){v.gender ? ` (${v.gender})` : ''}{v.age ? ` - ${v.age} ${v.ageUnit || ''}` : ''} - {v.vaccineName}
                         </Badge>
                       ))}
                     </div>
