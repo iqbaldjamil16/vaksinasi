@@ -169,7 +169,7 @@ export function ServiceForm({
       .catch((error) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
-          operation: isEditMode ? 'update' : 'create',
+          operation: 'write',
           requestResourceData: serviceData,
         }));
       });
@@ -469,7 +469,7 @@ export function ServiceForm({
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {vaccineOptions.map((vaccine) => (
+                                {vaccineOptions.filter(v => v !== 'Lainnya').map((vaccine) => (
                                   <SelectItem key={vaccine} value={vaccine}>{vaccine}</SelectItem>
                                 ))}
                                 <SelectItem value="Lainnya">Lainnya (Input Manual)</SelectItem>
