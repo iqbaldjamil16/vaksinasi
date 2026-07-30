@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -61,6 +60,10 @@ export default function EditServicePage() {
             animalType: data.livestockType,
             animalCount: data.livestockCount || 1,
           }];
+        }
+
+        if (!data.vaccineName && data.vaccinations?.[0]?.vaccineName) {
+          data.vaccineName = data.vaccinations[0].vaccineName;
         }
 
         if (!data.caseDevelopments || data.caseDevelopments.length === 0) {

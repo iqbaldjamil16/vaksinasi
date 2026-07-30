@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect, useMemo } from "react";
@@ -161,6 +160,10 @@ export default function ReportPage() {
             }];
           }
 
+          if (!data.vaccineName && data.vaccinations?.[0]?.vaccineName) {
+            data.vaccineName = data.vaccinations[0].vaccineName;
+          }
+
           if (!data.caseDevelopments || data.caseDevelopments.length === 0) {
             let status = 'Sembuh';
             if (data.caseDevelopment && typeof data.caseDevelopment === 'string' && data.caseDevelopment.length > 0) {
@@ -244,7 +247,7 @@ export default function ReportPage() {
      const updatedEntries = newEntries.filter((entry: {id: string}) => entry.id !== serviceId);
      if(newEntries.length !== updatedEntries.length) {
        localStorage.setItem('newEntries', JSON.stringify(updatedEntries));
-       setHighlightedIds(updatedEntries.map((e: {id: string}) => e.id));
+       setHighlightedIds(updatedEntries.map((entry: {id: string}) => entry.id));
      }
   };
 
@@ -278,7 +281,7 @@ export default function ReportPage() {
       });
 
       const allDataForSheet: any[] = [];
-      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Vaksin'];
+      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Program - Vaksin'];
       const officerNames = Object.keys(servicesByOfficer).sort();
 
       officerNames.forEach(officerName => {
@@ -289,7 +292,6 @@ export default function ReportPage() {
         const data = servicesByOfficer[officerName].map((service) => {
           const animalDetails = service.vaccinations.map(v => v.animalType).join(', ');
           const animalCounts = service.vaccinations.map(v => v.animalCount).join(', ');
-          const vaccineNames = service.vaccinations.map(v => v.vaccineName).join(', ');
 
           return {
             'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
@@ -297,7 +299,7 @@ export default function ReportPage() {
             'Alamat Pemilik': service.ownerAddress,
             'Jenis Ternak': animalDetails,
             'Jumlah': animalCounts,
-            'Vaksin': vaccineNames,
+            'Program - Vaksin': `${service.vaccinationProgram} - ${service.vaccineName}`,
           };
         });
         allDataForSheet.push(...data);
