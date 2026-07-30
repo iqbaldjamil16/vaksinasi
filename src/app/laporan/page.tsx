@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect, useMemo } from "react";
@@ -41,22 +42,6 @@ function StatisticsPlaceholder() {
                     <Skeleton className="h-40 w-full" />
                 </CardContent>
             </Card>
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-1/2" />
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <Skeleton className="h-40 w-full" />
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-1/2" />
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <Skeleton className="h-40 w-full" />
-                </CardContent>
-            </Card>
         </div>
     );
 }
@@ -85,12 +70,19 @@ export default function ReportPage() {
   const { firestore, isUserLoading: isAuthLoading } = useFirebase();
   const [filteredServices, setFilteredServices] = useState<HealthcareService[]>([]);
   const [isPending, startTransition] = useTransition();
-  const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
-  const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
+  
+  // Hydration safe state
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedPuskeswan, setSelectedPuskeswan] = useState<string>('all-puskeswan');
   const [selectedOfficer, setSelectedOfficer] = useState<string>('all-officers');
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIds, setHighlightedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedMonth(getMonth(new Date()).toString());
+    setSelectedYear(getYear(new Date()).toString());
+  }, []);
 
   useEffect(() => {
     const updateHighlighted = () => {
@@ -116,10 +108,10 @@ export default function ReportPage() {
   }, []);
   
   const servicesQuery = useMemoFirebase(() => {
-    if (!firestore || isAuthLoading) return null;
+    if (!firestore || isAuthLoading || selectedYear === '' || selectedMonth === '') return null;
 
-    const year = selectedYear === 'all-years' || selectedYear === '' ? null : parseInt(selectedYear, 10);
-    const month = selectedMonth === 'all-months' || selectedMonth === '' ? null : parseInt(selectedMonth, 10);
+    const year = selectedYear === 'all-years' ? null : parseInt(selectedYear, 10);
+    const month = selectedMonth === 'all-months' ? null : parseInt(selectedMonth, 10);
 
     const servicesCollection = collection(firestore, 'healthcareServices');
     const queryConstraints = [orderBy('date', 'desc')];
@@ -148,10 +140,6 @@ export default function ReportPage() {
     rawServices.forEach((doc) => {
         const data = doc;
         try {
-          if (data.officerName && data.officerName.toLowerCase().includes('basuki')) {
-            data.officerName = 'Basuki Budianto';
-          }
-          
           if (!data.vaccinations && data.livestockType) {
             data.vaccinations = [{
               vaccineName: data.vaccinationProgram || '',
@@ -183,7 +171,7 @@ export default function ReportPage() {
           });
           fetchedServices.push(service);
         } catch (e) {
-          // console.error('Validation error parsing service data:', e);
+          // Validation error skipped for listing
         }
       });
       return fetchedServices;
@@ -198,12 +186,10 @@ export default function ReportPage() {
     startTransition(() => {
       let servicesToFilter = services;
 
-      // Filter by Puskeswan
       if (selectedPuskeswan !== 'all-puskeswan') {
         servicesToFilter = servicesToFilter.filter(s => s.puskeswan === selectedPuskeswan);
       }
 
-      // Filter by Officer
       if (selectedOfficer !== 'all-officers') {
         servicesToFilter = servicesToFilter.filter(s => s.officerName === selectedOfficer);
       }
@@ -213,7 +199,6 @@ export default function ReportPage() {
         servicesToFilter = servicesToFilter.filter((service) => {
           const ownerName = service.ownerName.toLowerCase();
           const officerName = service.officerName.toLowerCase();
-          const puskeswan = service.puskeswan.toLowerCase();
           const animalTypes = service.vaccinations.map(v => v.animalType.toLowerCase()).join(' ');
           const formattedDate = format(new Date(service.date), 'dd MMM yyyy', {
             locale: id,
@@ -222,7 +207,6 @@ export default function ReportPage() {
           return (
             ownerName.includes(lowercasedFilter) ||
             officerName.includes(lowercasedFilter) ||
-            puskeswan.includes(lowercasedFilter) ||
             animalTypes.includes(lowercasedFilter) ||
             formattedDate.includes(lowercasedFilter)
           );
@@ -253,8 +237,6 @@ export default function ReportPage() {
 
   const handleDownload = () => {
     const wb = XLSX.utils.book_new();
-
-    // Get relevant Puskeswans based on filter
     const relevantPuskeswanList = selectedPuskeswan === 'all-puskeswan' 
       ? puskeswanList 
       : [selectedPuskeswan];

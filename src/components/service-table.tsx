@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -46,53 +47,26 @@ import { FirestorePermissionError } from '@/firebase/errors';
 function ReportSkeleton() {
   return (
     <>
-      {/* Mobile Skeleton */}
       <div className="space-y-4 p-4 md:hidden">
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>
-      {/* Desktop Skeleton */}
       <div className="hidden rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[120px]">
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
-              <TableHead className="w-[100px]">
-                <Skeleton className="h-5 w-full" />
-              </TableHead>
+              <TableHead className="w-[120px]"><Skeleton className="h-5 w-full" /></TableHead>
+              <TableHead><Skeleton className="h-5 w-full" /></TableHead>
+              <TableHead><Skeleton className="h-5 w-full" /></TableHead>
+              <TableHead><Skeleton className="h-5 w-full" /></TableHead>
+              <TableHead><Skeleton className="h-5 w-full" /></TableHead>
+              <TableHead className="w-[100px]"><Skeleton className="h-5 w-full" /></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow>
-              <TableCell colSpan={6}>
-                <Skeleton className="h-10 w-full" />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell colSpan={6}>
-                <Skeleton className="h-10 w-full" />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell colSpan={6}>
-                <Skeleton className="h-10 w-full" />
-              </TableCell>
-            </TableRow>
+            <TableRow><TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
+            <TableRow><TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
           </TableBody>
         </Table>
       </div>
@@ -119,25 +93,19 @@ function ServiceCard({
     if (!firestore || !service.id) return;
     startDeleteTransition(() => {
       const serviceDoc = doc(firestore, 'healthcareServices', service.id!);
+      
+      // Non-blocking delete
       deleteDoc(serviceDoc)
-        .then(() => {
-          toast({
-            title: 'Sukses',
-            description: 'Data pelayanan berhasil dihapus.',
-          });
-          onDelete(service.id!);
-        })
         .catch(() => {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: serviceDoc.path,
             operation: 'delete'
           }));
-          toast({
-            variant: 'destructive',
-            title: 'Gagal',
-            description: 'Gagal menghapus data.',
-          });
         });
+      
+      // Update local state immediately
+      onDelete(service.id!);
+      toast({ title: 'Menghapus...', description: 'Data sedang dihapus.' });
     });
   };
 
@@ -148,15 +116,15 @@ function ServiceCard({
       open={isOpen}
       onOpenChange={setIsOpen}
     >
-      <Card className={cn(isHighlighted && "highlight-new")}>
+      <Card className={cn("transition-colors duration-500", isHighlighted && "highlight-new")}>
         <CardHeader className="p-4">
           <div className="flex justify-between items-start">
             <div>
-              <div className="font-semibold">{service.officerName}</div>
-              <div className="text-sm text-muted-foreground">
+              <div className="font-semibold text-sm sm:text-base">{service.officerName}</div>
+              <div className="text-xs text-muted-foreground">
                 {service.puskeswan}
               </div>
-              <div className="text-sm text-muted-foreground pt-1">
+              <div className="text-xs text-muted-foreground pt-1">
                 {format(new Date(service.date), 'dd MMM yyyy', { locale: id })}
               </div>
             </div>
@@ -176,61 +144,62 @@ function ServiceCard({
           <CardContent className="p-4 pt-0 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <div className="text-xs font-semibold text-muted-foreground">
+                <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Pemilik
                 </div>
-                <p className="text-sm">{service.ownerName}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm font-medium">{service.ownerName}</p>
+                <p className="text-xs text-muted-foreground truncate">
                   {service.ownerAddress}
                 </p>
               </div>
               <div>
-                <div className="text-xs font-semibold text-muted-foreground">
+                <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Program
                 </div>
                 <p className="text-sm font-medium">{service.vaccinationProgram} - {service.vaccineName}</p>
               </div>
             </div>
             <div>
-              <div className="text-xs font-semibold text-muted-foreground">
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Jenis Hewan
               </div>
                <div className="flex flex-wrap gap-1 mt-1">
                 {service.vaccinations.map((v, index) => (
-                  <Badge key={index} variant="secondary">
+                  <Badge key={index} variant="secondary" className="text-[10px] px-1.5 py-0">
                     {v.animalType} ({v.animalCount}) {v.age ? `- ${v.age} ${v.ageUnit || ''}` : ''}
                   </Badge>
                 ))}
               </div>
             </div>
           </CardContent>
-          <CardFooter className="p-4 pt-0 justify-end gap-2">
+          <CardFooter className="p-4 pt-0 justify-end gap-2 border-t mt-2 pt-4">
             <PasswordDialog
               title="Akses Terbatas"
-              description="Silakan masukkan kata sandi untuk mengedit data."
+              description="Masukkan kata sandi untuk mengedit data."
               onSuccess={() => router.push(`/laporan/${service.id}/edit`)}
               trigger={
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Pencil className="h-4 w-4" />
+                <Button variant="outline" size="sm" className="h-8 gap-2">
+                  <Pencil className="h-3 w-3" /> Edit
                 </Button>
               }
             />
             <PasswordDialog
               title="Konfirmasi Hapus"
-              description="Tindakan ini memerlukan verifikasi. Masukkan kata sandi untuk melanjutkan."
+              description="Masukkan kata sandi untuk menghapus."
               onSuccess={handleDelete}
               trigger={
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive h-8 w-8"
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive h-8 gap-2"
                   disabled={isDeleting}
                 >
                   {isDeleting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3" />
                   )}
+                  Hapus
                 </Button>
               }
             />
@@ -258,24 +227,14 @@ function ActionsCell({
     startDeleteTransition(() => {
       const serviceDoc = doc(firestore, 'healthcareServices', service.id!);
       deleteDoc(serviceDoc)
-        .then(() => {
-          toast({
-            title: 'Sukses',
-            description: 'Data pelayanan berhasil dihapus.',
-          });
-          onDelete(service.id!);
-        })
         .catch(() => {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: serviceDoc.path,
             operation: 'delete'
           }));
-          toast({
-            variant: 'destructive',
-            title: 'Gagal',
-            description: 'Gagal menghapus data.',
-          });
         });
+      onDelete(service.id!);
+      toast({ title: 'Dihapus', description: 'Data telah dihapus dari tampilan lokal.' });
     });
   };
 
@@ -283,7 +242,7 @@ function ActionsCell({
     <div className="flex items-center justify-center gap-2">
       <PasswordDialog
         title="Akses Terbatas"
-        description="Silakan masukkan kata sandi untuk mengedit data."
+        description="Masukkan kata sandi untuk mengedit."
         onSuccess={() => router.push(`/laporan/${service.id}/edit`)}
         trigger={
           <Button variant="ghost" size="icon">
@@ -293,7 +252,7 @@ function ActionsCell({
       />
       <PasswordDialog
         title="Konfirmasi Hapus"
-        description="Tindakan ini memerlukan verifikasi. Masukkan kata sandi untuk melanjutkan."
+        description="Masukkan kata sandi untuk menghapus."
         onSuccess={handleDelete}
         trigger={
           <Button
@@ -324,19 +283,13 @@ interface ServiceTableProps {
 }
 
 export function ServiceTable({ services, loading, highlightedIds, searchTerm, onDelete, isPending }: ServiceTableProps) {
-  
-  if (loading) {
-    return <ReportSkeleton />;
-  }
+  if (loading) return <ReportSkeleton />;
 
   return (
-    <div
-      className={cn(isPending && 'opacity-50 transition-opacity duration-300')}
-    >
-      {/* Mobile View */}
+    <div className={cn("transition-opacity duration-300", isPending && 'opacity-50')}>
       <div className="md:hidden">
         {services.length > 0 ? (
-          <div className="space-y-4 p-4">
+          <div className="space-y-3 p-2 sm:p-4">
             {services.map((service) => (
               <ServiceCard
                 key={service.id}
@@ -349,19 +302,16 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 py-12">
             <PawPrint className="h-8 w-8 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              {searchTerm
-                ? 'Tidak ada hasil ditemukan.'
-                : 'Belum ada data untuk periode ini.'}
+            <p className="text-muted-foreground text-center px-4">
+              {searchTerm ? 'Tidak ada hasil ditemukan.' : 'Belum ada data untuk periode ini.'}
             </p>
           </div>
         )}
       </div>
 
-      {/* Table View (Desktop) */}
-      <div className="relative hidden max-h-[520px] w-full overflow-auto rounded-md border md:block">
+      <div className="relative hidden max-h-[600px] w-full overflow-auto rounded-md border md:block">
         <Table>
-          <TableHeader className="sticky top-0 bg-card">
+          <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
             <TableRow>
               <TableHead className="w-[120px]">Tanggal</TableHead>
               <TableHead>Pemilik</TableHead>
@@ -374,41 +324,32 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
           <TableBody>
             {services.length > 0 ? (
               services.map((service) => (
-                <TableRow key={service.id} className={cn(service.id && highlightedIds.includes(service.id) && "highlight-new")}>
+                <TableRow key={service.id} className={cn("transition-colors duration-500", service.id && highlightedIds.includes(service.id) && "highlight-new")}>
                   <TableCell className="font-medium align-top">
-                    {format(new Date(service.date), 'dd MMM yyyy', {
-                      locale: id,
-                    })}
+                    {format(new Date(service.date), 'dd MMM yyyy', { locale: id })}
                   </TableCell>
                   <TableCell className="align-top">
                     <div className="font-medium">{service.ownerName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {service.ownerAddress}
-                    </div>
+                    <div className="text-xs text-muted-foreground">{service.ownerAddress}</div>
                   </TableCell>
                   <TableCell className="align-top">
-                    <div className="font-medium">{service.vaccinationProgram} - {service.vaccineName}</div>
+                    <div className="font-medium text-xs lg:text-sm">{service.vaccinationProgram} - {service.vaccineName}</div>
                   </TableCell>
                   <TableCell className="align-top">
                      <div className="flex flex-wrap gap-1">
                       {service.vaccinations.map((v, index) => (
-                        <Badge key={index} variant="secondary">
+                        <Badge key={index} variant="secondary" className="text-[10px]">
                           {v.animalType} ({v.animalCount}) {v.age ? `- ${v.age} ${v.ageUnit || ''}` : ''}
                         </Badge>
                       ))}
                     </div>
                   </TableCell>
                   <TableCell className="align-top">
-                    <div className="font-medium">{service.officerName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {service.puskeswan}
-                    </div>
+                    <div className="font-medium text-sm">{service.officerName}</div>
+                    <div className="text-xs text-muted-foreground">{service.puskeswan}</div>
                   </TableCell>
                   <TableCell className="align-top text-center">
-                    <ActionsCell
-                      service={service}
-                      onDelete={onDelete}
-                    />
+                    <ActionsCell service={service} onDelete={onDelete} />
                   </TableCell>
                 </TableRow>
               ))
@@ -417,11 +358,7 @@ export function ServiceTable({ services, loading, highlightedIds, searchTerm, on
                 <TableCell colSpan={6} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <PawPrint className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      {searchTerm
-                        ? 'Tidak ada hasil ditemukan.'
-                        : 'Pilih bulan dan tahun untuk menampilkan data.'}
-                    </p>
+                    <p className="text-muted-foreground">Tidak ada data ditemukan.</p>
                   </div>
                 </TableCell>
               </TableRow>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -148,7 +149,6 @@ export function ServiceForm({
 
     const { id, caseDevelopment, ...dataToSave } = values;
     
-    // Apply the global vaccine name to all vaccination details
     const updatedVaccinations = dataToSave.vaccinations.map(v => ({
       ...v,
       vaccineName: dataToSave.vaccineName
@@ -160,62 +160,34 @@ export function ServiceForm({
       date: Timestamp.fromDate(values.date),
     };
 
-    if (isEditMode && initialData?.id) {
-        const serviceDocRef = doc(firestore, 'healthcareServices', initialData.id);
-        setDoc(serviceDocRef, serviceData, { merge: true })
-          .then(() => {
-            toast({
-              title: "Sukses",
-              description: "Data pelayanan berhasil diperbarui. Mengarahkan...",
-            });
-            router.push('/laporan');
-          })
-          .catch(() => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: serviceDocRef.path,
-              operation: 'update',
-              requestResourceData: serviceData,
-            }));
-            toast({
-              variant: "destructive",
-              title: "Gagal Memperbarui",
-              description: "Terjadi kesalahan saat memperbarui data. Periksa kembali isian Anda.",
-            });
-          })
-          .finally(() => {
-            setIsSubmitting(false);
-          });
-    } else {
-        const newDocRef = doc(collection(firestore, 'healthcareServices'));
-        setDoc(newDocRef, serviceData)
-          .then(() => {
-            const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
-            newEntries.push({ id: newDocRef.id, timestamp: Date.now() });
-            localStorage.setItem('newEntries', JSON.stringify(newEntries));
+    const docRef = isEditMode && initialData?.id 
+      ? doc(firestore, 'healthcareServices', initialData.id)
+      : doc(collection(firestore, 'healthcareServices'));
 
-            toast({
-                title: "Sukses",
-                description: "Data pelayanan berhasil disimpan.",
-            });
-            
-            router.push('/laporan');
-          })
-          .catch(() => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: newDocRef.path,
-              operation: 'create',
-              requestResourceData: serviceData,
-            }));
-            toast({
-              variant: "destructive",
-              title: "Gagal Menyimpan",
-              description: "Terjadi kesalahan saat menyimpan data. Silakan coba lagi.",
-            });
-          })
-          .finally(() => {
-            setIsSubmitting(false);
-          });
+    // Non-blocking write: leverage local cache for instant updates even on low network
+    setDoc(docRef, serviceData, { merge: true })
+      .catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: docRef.path,
+          operation: isEditMode ? 'update' : 'create',
+          requestResourceData: serviceData,
+        }));
+      });
+
+    // Optimistically update the "newEntries" for highlighting
+    if (!isEditMode) {
+      const newEntries = JSON.parse(localStorage.getItem('newEntries') || '[]');
+      newEntries.push({ id: docRef.id, timestamp: Date.now() });
+      localStorage.setItem('newEntries', JSON.stringify(newEntries));
     }
+
+    toast({
+      title: isEditMode ? "Memperbarui..." : "Menyimpan...",
+      description: "Data sedang diproses. Anda dapat melihatnya di halaman laporan.",
+    });
+
+    // Instant redirect
+    router.push('/laporan');
   }
 
   return (
@@ -526,7 +498,7 @@ export function ServiceForm({
                     </Label>
                   </div>
                   {vaccinationFields.map((item, index) => (
-                    <Card key={item.id} className="relative p-4 bg-card">
+                    <Card key={item.id} className="relative p-4 bg-card mb-4 last:mb-0">
                       {vaccinationFields.length > 1 && (
                         <Button
                           type="button"
@@ -682,7 +654,7 @@ export function ServiceForm({
                         const isManualDosageUnit = dosageUnitValue === 'Lainnya';
 
                         return (
-                        <Card key={item.id} className="relative p-4 bg-card">
+                        <Card key={item.id} className="relative p-4 bg-card mb-4 last:mb-0">
                             {treatmentFields.length > 1 && (
                                 <Button
                                     type="button"
@@ -814,7 +786,7 @@ export function ServiceForm({
                       </div>
 
                       {caseDevelopmentFields.map((item, index) => (
-                          <Card key={item.id} className="relative p-4 bg-card">
+                          <Card key={item.id} className="relative p-4 bg-card mb-4 last:mb-0">
                           {caseDevelopmentFields.length > 1 && (
                               <Button
                               type="button"
