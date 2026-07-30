@@ -263,7 +263,7 @@ export default function ReportPage() {
       });
 
       const allDataForSheet: any[] = [];
-      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Program - Vaksin'];
+      const headers = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Program Vaksinasi', 'Jenis Vaksin', 'Jenis Hewan', 'Jenis Kelamin', 'Umur', 'Jumlah Hewan'];
       const officerNames = Object.keys(servicesByOfficer).sort();
 
       officerNames.forEach(officerName => {
@@ -272,16 +272,21 @@ export default function ReportPage() {
         allDataForSheet.push({ 'Nama Petugas': officerName });
         allDataForSheet.push(Object.fromEntries(headers.map(h => [h, h])));
         const data = servicesByOfficer[officerName].map((service) => {
-          const animalDetails = service.vaccinations.map(v => v.animalType).join(', ');
+          const animalTypes = service.vaccinations.map(v => v.animalType).join(', ');
           const animalCounts = service.vaccinations.map(v => v.animalCount).join(', ');
+          const genders = service.vaccinations.map(v => v.gender || '-').join(', ');
+          const ages = service.vaccinations.map(v => v.age ? `${v.age} ${v.ageUnit || ''}` : '-').join(', ');
 
           return {
             'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
             'Nama Pemilik': service.ownerName,
             'Alamat Pemilik': service.ownerAddress,
-            'Jenis Ternak': animalDetails,
-            'Jumlah': animalCounts,
-            'Program - Vaksin': `${service.vaccinationProgram} - ${service.vaccineName}`,
+            'Program Vaksinasi': service.vaccinationProgram,
+            'Jenis Vaksin': service.vaccineName,
+            'Jenis Hewan': animalTypes,
+            'Jenis Kelamin': genders,
+            'Umur': ages,
+            'Jumlah Hewan': animalCounts,
           };
         });
         allDataForSheet.push(...data);
