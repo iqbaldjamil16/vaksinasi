@@ -178,12 +178,12 @@ export default function ReportPage() {
       }
 
       if (selectedOfficer !== 'all-officers') {
-        // Mendukung pencarian berbasis teks jika ada lebih dari satu nama petugas pada satu data inputan
         servicesToFilter = servicesToFilter.filter(s => s.officerName.includes(selectedOfficer));
       }
 
-      const lowercasedFilter = searchTerm.toLowerCase();
-      if (lowercasedFilter) {
+      // Updated search logic to support multi-criteria separated by commas
+      const searchTerms = searchTerm.toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+      if (searchTerms.length > 0) {
         servicesToFilter = servicesToFilter.filter((service) => {
           const ownerName = service.ownerName.toLowerCase();
           const officerName = service.officerName.toLowerCase();
@@ -192,11 +192,12 @@ export default function ReportPage() {
             locale: id,
           }).toLowerCase();
 
-          return (
-            ownerName.includes(lowercasedFilter) ||
-            officerName.includes(lowercasedFilter) ||
-            animalTypes.includes(lowercasedFilter) ||
-            formattedDate.includes(lowercasedFilter)
+          // Matches if ANY search term is found in ANY relevant field
+          return searchTerms.some(term => 
+            ownerName.includes(term) ||
+            officerName.includes(term) ||
+            animalTypes.includes(term) ||
+            formattedDate.includes(term)
           );
         });
       }
@@ -271,7 +272,6 @@ export default function ReportPage() {
         allDataForSheet.push(Object.fromEntries(headers.map(h => [h, h])));
         
         servicesByOfficer[officerName].forEach((service) => {
-          // Kelompokkan data hewan berdasarkan jenis, kelamin, dan umur
           const groupedVaccinations: Record<string, { 
             animalType: string, 
             gender: string, 
@@ -296,7 +296,6 @@ export default function ReportPage() {
             }
           });
 
-          // Buat baris masing-masing untuk setiap kelompok yang berbeda
           Object.values(groupedVaccinations).forEach(group => {
             allDataForSheet.push({
               'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
@@ -432,7 +431,7 @@ export default function ReportPage() {
                     </SelectContent>
                     </Select>
                     <Input
-                    placeholder="Cari data..."
+                    placeholder="Cari data (Contoh: Sapi, Haslim)..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full col-span-2 md:w-64"

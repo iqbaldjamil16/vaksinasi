@@ -3,9 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CornerUpLeft, Download, Loader2 } from 'lucide-react';
+import { CornerUpLeft, Download, Loader2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import jsPDF from 'jspdf';
+import jsPDF from 'jsPDF';
 import autoTable from 'jspdf-autotable';
 import { useFirebase } from '@/firebase/provider';
 import { collection, getDocs, query, where, Timestamp, orderBy, Query, DocumentData } from 'firebase/firestore';
@@ -14,6 +14,7 @@ import { format, getMonth, getYear, subYears, startOfMonth, endOfMonth } from 'd
 import { id } from 'date-fns/locale';
 import { useState, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { puskeswanList, officerListMap } from '@/lib/definitions';
@@ -43,6 +44,7 @@ export default function DocsPage() {
   const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
   const [selectedPuskeswan, setSelectedPuskeswan] = useState<string>('all-puskeswan');
   const [selectedOfficer, setSelectedOfficer] = useState<string>('all-officers');
+  const [officerSearchTerm, setOfficerSearchTerm] = useState<string>('');
 
   const currentOfficerList = useMemo(() => {
     if (selectedPuskeswan === 'all-puskeswan') return [];
@@ -113,9 +115,20 @@ export default function DocsPage() {
           }
       });
       
+      const searchTerms = officerSearchTerm.toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+
       const services = allServices.filter(s => {
           const matchPuskeswan = selectedPuskeswan === 'all-puskeswan' || s.puskeswan === selectedPuskeswan;
-          const matchOfficer = selectedOfficer === 'all-officers' || s.officerName.includes(selectedOfficer);
+          
+          // Dropdown filter match
+          let matchOfficer = selectedOfficer === 'all-officers' || s.officerName.includes(selectedOfficer);
+          
+          // Search term filter match (supports multiple names via comma)
+          if (searchTerms.length > 0) {
+            const matchesSearch = searchTerms.some(term => s.officerName.toLowerCase().includes(term));
+            matchOfficer = matchOfficer && matchesSearch;
+          }
+
           return matchPuskeswan && matchOfficer;
       });
 
@@ -144,7 +157,12 @@ export default function DocsPage() {
       doc.text('Petugas', labelX, currentY);
       doc.text(':', colonX, currentY);
       doc.setFont(undefined, 'bold');
-      doc.text(selectedOfficer === 'all-officers' ? 'Semua Petugas' : selectedOfficer, valueX, currentY);
+      
+      const officerText = officerSearchTerm.trim() 
+        ? officerSearchTerm 
+        : (selectedOfficer === 'all-officers' ? 'Semua Petugas' : selectedOfficer);
+      
+      doc.text(officerText, valueX, currentY);
       doc.setFont(undefined, 'normal');
       currentY += lineHeight;
       
@@ -280,6 +298,17 @@ export default function DocsPage() {
                         </SelectContent>
                     </Select>
                 </div>
+                
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Cari Nama Petugas (Gunakan koma untuk banyak nama, misal: Haslim, Ishak)" 
+                    value={officerSearchTerm}
+                    onChange={(e) => setOfficerSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                         <SelectTrigger>
