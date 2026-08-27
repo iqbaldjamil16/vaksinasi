@@ -141,11 +141,24 @@ export default function DocsPage() {
       // --- Main Title ---
       pdf.setFontSize(12);
       pdf.setFont(undefined, 'bold');
-      pdf.text('LAPORAN PELAYANAN KESEHATAN HEWAN', pageWidth / 2, 15, { align: 'center' });
+      pdf.text('LAPORAN PELAYANAN KESEHATAN HEWAN', pageWidth / 2, 12, { align: 'center' });
+
+      // --- Sub Title Line 2 ---
+      const uniqueDesas = Array.from(new Set(services.map(s => s.ownerAddress.trim().toUpperCase()))).filter(Boolean).sort();
+      const mappedDesas = uniqueDesas.map(d => `DESA ${d}`);
+      const desaString = mappedDesas.length > 1 
+        ? mappedDesas.slice(0, -1).join(', ') + ' DAN ' + mappedDesas[mappedDesas.length - 1]
+        : mappedDesas[0] || 'SEMUA DESA';
+      
+      const yearString = selectedYear === 'all-years' ? getYear(new Date()).toString() : selectedYear;
+      const subTitle = `PROGRAM VAKSINASI RABIES ${desaString} ${yearString}`;
+      
+      pdf.setFontSize(11);
+      pdf.text(subTitle, pageWidth / 2, 19, { align: 'center' });
       
       // --- Metadata Section ---
       pdf.setFontSize(9);
-      let currentY = 25;
+      let currentY = 28;
       const labelX = 14;
       const colonX = 45;
       const valueX = 47;
