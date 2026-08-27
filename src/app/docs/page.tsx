@@ -144,13 +144,16 @@ export default function DocsPage() {
       pdf.text('LAPORAN PELAYANAN KESEHATAN HEWAN', pageWidth / 2, 12, { align: 'center' });
 
       // --- Sub Title Line 2 (Dynamic Villages) ---
-      const uniqueDesas = Array.from(new Set(services.map(s => s.ownerAddress.trim().toUpperCase()))).filter(Boolean).sort();
+      const uniqueDesas = Array.from(new Set(services.map(s => {
+        const addr = s.ownerAddress.trim().toUpperCase();
+        return addr.startsWith('DESA') ? addr : `DESA ${addr}`;
+      }))).filter(Boolean).sort();
+      
       const desaListString = uniqueDesas.length > 1 
         ? uniqueDesas.slice(0, -1).join(', ') + ' DAN ' + uniqueDesas[uniqueDesas.length - 1]
         : uniqueDesas[0] || 'SEMUA DESA';
       
       const yearString = selectedYear === 'all-years' ? getYear(new Date()).toString() : selectedYear;
-      // Removed hardcoded "DESA" to avoid duplication if addresses already have it
       const subTitle = `PROGRAM VAKSINASI RABIES ${desaListString} ${yearString}`;
       
       pdf.setFontSize(11);
