@@ -150,7 +150,8 @@ export default function DocsPage() {
         : uniqueDesas[0] || 'SEMUA DESA';
       
       const yearString = selectedYear === 'all-years' ? getYear(new Date()).toString() : selectedYear;
-      const subTitle = `PROGRAM VAKSINASI RABIES DESA ${desaListString} ${yearString}`;
+      // Removed hardcoded "DESA" to avoid duplication if addresses already have it
+      const subTitle = `PROGRAM VAKSINASI RABIES ${desaListString} ${yearString}`;
       
       pdf.setFontSize(11);
       pdf.text(subTitle, pageWidth / 2, 19, { align: 'center' });
