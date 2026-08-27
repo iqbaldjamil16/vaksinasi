@@ -111,7 +111,7 @@ export default function DocsPage() {
               });
               allServices.push(service);
           } catch (e) {
-              // Validasi error diabaikan
+              // Validation error ignored
           }
       });
       
@@ -137,51 +137,50 @@ export default function DocsPage() {
       }
 
       const pdf = new jsPDF({ orientation: 'landscape' });
-      
       const pageWidth = pdf.internal.pageSize.getWidth();
-      pdf.setFontSize(18);
+
+      // --- Header Kop Surat ---
+      pdf.setFontSize(14);
       pdf.setFont(undefined, 'bold');
-      pdf.text('Laporan Pelayanan Kesehatan Hewan', pageWidth / 2, 22, { align: 'center' });
+      pdf.text('PEMERINTAH KABUPATEN MAMUJU TENGAH', pageWidth / 2, 12, { align: 'center' });
+      pdf.text('DINAS KETAHANAN PANGAN DAN PERTANIAN', pageWidth / 2, 18, { align: 'center' });
+      
+      pdf.setLineWidth(0.8);
+      pdf.line(14, 22, pageWidth - 14, 22);
+      pdf.setLineWidth(0.2);
+      pdf.line(14, 23, pageWidth - 14, 23); // Double line effect
       
       pdf.setFontSize(11);
+      pdf.text('LAPORAN PELAYANAN KESEHATAN HEWAN', pageWidth / 2, 30, { align: 'center' });
       
+      // --- Metadata Section ---
+      pdf.setFontSize(9);
+      let currentY = 38;
       const labelX = 14;
       const colonX = 45;
       const valueX = 47;
-      let currentY = 30;
-      const lineHeight = 6;
-      
-      pdf.setFont(undefined, 'normal');
-      pdf.text('Petugas', labelX, currentY);
-      pdf.text(':', colonX, currentY);
-      pdf.setFont(undefined, 'bold');
-      
+      const lineHeight = 5;
+
+      const drawMetadataRow = (label: string, value: string) => {
+        pdf.setFont(undefined, 'bold');
+        pdf.text(label, labelX, currentY);
+        pdf.setFont(undefined, 'normal');
+        pdf.text(':', colonX, currentY);
+        pdf.text(value, valueX, currentY);
+        currentY += lineHeight;
+      };
+
       const officerText = officerSearchTerm.trim() 
         ? officerSearchTerm 
         : (selectedOfficer === 'all-officers' ? 'Semua Petugas' : selectedOfficer);
       
-      pdf.text(officerText, valueX, currentY);
-      pdf.setFont(undefined, 'normal');
-      currentY += lineHeight;
-      
-      pdf.text('Puskeswan', labelX, currentY);
-      pdf.text(':', colonX, currentY);
-      pdf.text(selectedPuskeswan === 'all-puskeswan' ? 'Semua Puskeswan' : selectedPuskeswan, valueX, currentY);
-      currentY += lineHeight;
+      drawMetadataRow('Puskeswan', selectedPuskeswan === 'all-puskeswan' ? 'Semua Puskeswan' : selectedPuskeswan);
+      drawMetadataRow('Petugas', officerText);
 
       const monthLabelText = months.find(m => m.value === selectedMonth)?.label || 'Semua Bulan';
       const yearLabelText = selectedYear === 'all-years' ? 'Semua Tahun' : selectedYear;
-      let periodLabel;
-      if (selectedYear === 'all-years') {
-          periodLabel = 'Semua Periode';
-      } else if (selectedMonth === 'all-months') {
-          periodLabel = yearLabelText;
-      } else {
-          periodLabel = `${monthLabelText} ${yearLabelText}`;
-      }
-      pdf.text('Periode', labelX, currentY);
-      pdf.text(':', colonX, currentY);
-      pdf.text(periodLabel, valueX, currentY);
+      let periodLabel = selectedYear === 'all-years' ? 'Semua Periode' : (selectedMonth === 'all-months' ? yearLabelText : `${monthLabelText} ${yearLabelText}`);
+      drawMetadataRow('Periode', periodLabel);
 
       if (services.length > 0) {
         const tableColumn = [
@@ -245,26 +244,22 @@ export default function DocsPage() {
         autoTable(pdf, {
             head: [tableColumn],
             body: tableRows,
-            startY: currentY + 5,
-            styles: { fontSize: 7, cellPadding: 2, textColor: [0, 0, 0], valign: 'middle' },
-            headStyles: { fillColor: [38, 89, 43], textColor: [255, 255, 255], fontSize: 8, halign: 'center', valign: 'middle' },
+            startY: currentY + 3,
+            styles: { fontSize: 7, cellPadding: 2, textColor: [0, 0, 0], valign: 'middle', overflow: 'linebreak' },
+            headStyles: { fillColor: [38, 89, 43], textColor: [255, 255, 255], fontSize: 8, halign: 'center', valign: 'middle', fontStyle: 'bold' },
             columnStyles: {
               0: { halign: 'center', cellWidth: 8 },
               1: { cellWidth: 18 },
               9: { halign: 'center', cellWidth: 15 },
-            }
+            },
+            margin: { left: 14, right: 14 }
         });
         
         const finalY = (pdf as any).lastAutoTable.finalY;
         const totalText = `Total Data: ${services.length} - Total Pelayanan Keswan: ${totalLivestock} Ekor`;
-        pdf.setFontSize(10);
+        pdf.setFontSize(9);
         pdf.setFont(undefined, 'bold');
-        pdf.text(totalText, 14, finalY + 10);
-        pdf.setFont(undefined, 'normal');
-
-      } else {
-        pdf.setFontSize(11);
-        pdf.text('Tidak ada data pelayanan tabel untuk periode ini.', 14, 50);
+        pdf.text(totalText, 14, finalY + 8);
       }
 
       const fileName = `laporan-pelayanan-${periodLabel.replace(/\s/g, '_')}.pdf`;
