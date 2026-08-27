@@ -123,8 +123,7 @@ export default function DocsPage() {
           let matchOfficer = selectedOfficer === 'all-officers' || s.officerName.includes(selectedOfficer);
           
           if (searchTerms.length > 0) {
-            const matchesSearch = searchTerms.every(term => s.officerName.toLowerCase().includes(term));
-            matchOfficer = matchOfficer && matchesSearch;
+            matchOfficer = searchTerms.every(term => s.officerName.toLowerCase().includes(term));
           }
 
           return matchPuskeswan && matchOfficer;
@@ -139,23 +138,14 @@ export default function DocsPage() {
       const pdf = new jsPDF({ orientation: 'landscape' });
       const pageWidth = pdf.internal.pageSize.getWidth();
 
-      // --- Header Kop Surat ---
-      pdf.setFontSize(14);
+      // --- Main Title ---
+      pdf.setFontSize(12);
       pdf.setFont(undefined, 'bold');
-      pdf.text('PEMERINTAH KABUPATEN MAMUJU TENGAH', pageWidth / 2, 12, { align: 'center' });
-      pdf.text('DINAS KETAHANAN PANGAN DAN PERTANIAN', pageWidth / 2, 18, { align: 'center' });
-      
-      pdf.setLineWidth(0.8);
-      pdf.line(14, 22, pageWidth - 14, 22);
-      pdf.setLineWidth(0.2);
-      pdf.line(14, 23, pageWidth - 14, 23); // Double line effect
-      
-      pdf.setFontSize(11);
-      pdf.text('LAPORAN PELAYANAN KESEHATAN HEWAN', pageWidth / 2, 30, { align: 'center' });
+      pdf.text('LAPORAN PELAYANAN KESEHATAN HEWAN', pageWidth / 2, 15, { align: 'center' });
       
       // --- Metadata Section ---
       pdf.setFontSize(9);
-      let currentY = 38;
+      let currentY = 25;
       const labelX = 14;
       const colonX = 45;
       const valueX = 47;
