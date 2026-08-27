@@ -143,15 +143,14 @@ export default function DocsPage() {
       pdf.setFont(undefined, 'bold');
       pdf.text('LAPORAN PELAYANAN KESEHATAN HEWAN', pageWidth / 2, 12, { align: 'center' });
 
-      // --- Sub Title Line 2 ---
+      // --- Sub Title Line 2 (Dynamic Villages) ---
       const uniqueDesas = Array.from(new Set(services.map(s => s.ownerAddress.trim().toUpperCase()))).filter(Boolean).sort();
-      const mappedDesas = uniqueDesas.map(d => `DESA ${d}`);
-      const desaString = mappedDesas.length > 1 
-        ? mappedDesas.slice(0, -1).join(', ') + ' DAN ' + mappedDesas[mappedDesas.length - 1]
-        : mappedDesas[0] || 'SEMUA DESA';
+      const desaListString = uniqueDesas.length > 1 
+        ? uniqueDesas.slice(0, -1).join(', ') + ' DAN ' + uniqueDesas[uniqueDesas.length - 1]
+        : uniqueDesas[0] || 'SEMUA DESA';
       
       const yearString = selectedYear === 'all-years' ? getYear(new Date()).toString() : selectedYear;
-      const subTitle = `PROGRAM VAKSINASI RABIES ${desaString} ${yearString}`;
+      const subTitle = `PROGRAM VAKSINASI RABIES DESA ${desaListString} ${yearString}`;
       
       pdf.setFontSize(11);
       pdf.text(subTitle, pageWidth / 2, 19, { align: 'center' });
@@ -174,7 +173,7 @@ export default function DocsPage() {
       };
 
       drawMetadataRow('Puskeswan', selectedPuskeswan === 'all-puskeswan' ? 'Semua Puskeswan' : selectedPuskeswan);
-      // Hardcode the officer name as requested
+      // Fixed officer name as requested: drh. Iqbal Djamil
       drawMetadataRow('Petugas', 'drh. Iqbal Djamil');
 
       const monthLabelText = months.find(m => m.value === selectedMonth)?.label || 'Semua Bulan';
