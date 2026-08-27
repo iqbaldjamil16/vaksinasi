@@ -120,11 +120,8 @@ export default function DocsPage() {
       const services = allServices.filter(s => {
           const matchPuskeswan = selectedPuskeswan === 'all-puskeswan' || s.puskeswan === selectedPuskeswan;
           
-          // Dropdown filter match
           let matchOfficer = selectedOfficer === 'all-officers' || s.officerName.includes(selectedOfficer);
           
-          // Search term filter match (supports multiple names via comma)
-          // CHANGED: Use 'every' instead of 'some' to ensure ALL search criteria are present in the ONE single data record (as a team)
           if (searchTerms.length > 0) {
             const matchesSearch = searchTerms.every(term => s.officerName.toLowerCase().includes(term));
             matchOfficer = matchOfficer && matchesSearch;
@@ -187,28 +184,60 @@ export default function DocsPage() {
       pdf.text(periodLabel, valueX, currentY);
 
       if (services.length > 0) {
-        const tableColumn = ["No.", "Tanggal", "Puskeswan", "Pemilik", "Alamat", "Jenis Hewan", "Pengobatan", "Perkembangan Kasus"];
+        const tableColumn = [
+          "No.", 
+          "Tanggal", 
+          "Nama Pemilik", 
+          "Alamat Pemilik", 
+          "Program Vaksinasi", 
+          "Jenis Vaksin", 
+          "Jenis Hewan", 
+          "Jenis Kelamin", 
+          "Umur", 
+          "Jumlah Hewan"
+        ];
         const tableRows: any[][] = [];
+        let rowCount = 1;
 
-        services.forEach((service, index) => {
-            const treatments = service.treatments.map(t => `${t.medicineName} (${t.dosageValue} ${t.dosageUnit})`).join('\n');
-            const caseDevelopmentText = (service.caseDevelopments || [])
-              .filter(dev => dev.status && dev.count > 0)
-              .map(dev => `${dev.status} (${dev.count})`)
-              .join(', ');
-            const animalDetails = service.vaccinations.map(v => `${v.animalType} (${v.animalCount})`).join('\n');
+        services.forEach((service) => {
+            const groupedVaccinations: Record<string, { 
+                animalType: string, 
+                gender: string, 
+                age: string, 
+                animalCount: number 
+            }> = {};
 
-            const serviceData = [
-                index + 1,
-                format(new Date(service.date), 'dd-MM-yyyy', { locale: id }),
-                service.puskeswan,
-                service.ownerName,
-                service.ownerAddress,
-                animalDetails,
-                treatments,
-                caseDevelopmentText,
-            ];
-            tableRows.push(serviceData);
+            service.vaccinations.forEach(v => {
+                const genderStr = v.gender || '-';
+                const ageStr = v.age ? `${v.age} ${v.ageUnit || ''}` : '-';
+                const key = `${v.animalType}|${genderStr}|${ageStr}`;
+
+                if (groupedVaccinations[key]) {
+                    groupedVaccinations[key].animalCount += v.animalCount;
+                } else {
+                    groupedVaccinations[key] = {
+                        animalType: v.animalType,
+                        gender: genderStr,
+                        age: ageStr,
+                        animalCount: v.animalCount
+                    };
+                }
+            });
+
+            Object.values(groupedVaccinations).forEach(group => {
+                tableRows.push([
+                    rowCount++,
+                    format(new Date(service.date), 'dd-MM-yyyy', { locale: id }),
+                    service.ownerName,
+                    service.ownerAddress,
+                    service.vaccinationProgram,
+                    service.vaccineName,
+                    group.animalType,
+                    group.gender,
+                    group.age,
+                    group.animalCount,
+                ]);
+            });
         });
         
         const totalLivestock = services.reduce((sum, service) => sum + service.vaccinations.reduce((s, v) => s + v.animalCount, 0), 0);
@@ -217,10 +246,12 @@ export default function DocsPage() {
             head: [tableColumn],
             body: tableRows,
             startY: currentY + 5,
-            styles: { fontSize: 8, cellPadding: 2, textColor: [0, 0, 0], valign: 'middle' },
-            headStyles: { fillColor: [38, 89, 43], textColor: [255, 255, 255], fontSize: 9, halign: 'center', valign: 'middle' },
+            styles: { fontSize: 7, cellPadding: 2, textColor: [0, 0, 0], valign: 'middle' },
+            headStyles: { fillColor: [38, 89, 43], textColor: [255, 255, 255], fontSize: 8, halign: 'center', valign: 'middle' },
             columnStyles: {
-              0: { halign: 'center' },
+              0: { halign: 'center', cellWidth: 8 },
+              1: { cellWidth: 18 },
+              9: { halign: 'center', cellWidth: 15 },
             }
         });
         
