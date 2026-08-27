@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CornerUpLeft, Download, Loader2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import jsPDF from 'jsPDF';
+import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useFirebase } from '@/firebase/provider';
 import { collection, getDocs, query, where, Timestamp, orderBy, Query, DocumentData } from 'firebase/firestore';
@@ -138,14 +138,14 @@ export default function DocsPage() {
           return;
       }
 
-      const doc = new jsPDF({ orientation: 'landscape' });
+      const pdf = new jsPDF({ orientation: 'landscape' });
       
-      const pageWidth = doc.internal.pageSize.getWidth();
-      doc.setFontSize(18);
-      doc.setFont(undefined, 'bold');
-      doc.text('Laporan Pelayanan Kesehatan Hewan', pageWidth / 2, 22, { align: 'center' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Laporan Pelayanan Kesehatan Hewan', pageWidth / 2, 22, { align: 'center' });
       
-      doc.setFontSize(11);
+      pdf.setFontSize(11);
       
       const labelX = 14;
       const colonX = 45;
@@ -153,22 +153,22 @@ export default function DocsPage() {
       let currentY = 30;
       const lineHeight = 6;
       
-      doc.setFont(undefined, 'normal');
-      doc.text('Petugas', labelX, currentY);
-      doc.text(':', colonX, currentY);
-      doc.setFont(undefined, 'bold');
+      pdf.setFont(undefined, 'normal');
+      pdf.text('Petugas', labelX, currentY);
+      pdf.text(':', colonX, currentY);
+      pdf.setFont(undefined, 'bold');
       
       const officerText = officerSearchTerm.trim() 
         ? officerSearchTerm 
         : (selectedOfficer === 'all-officers' ? 'Semua Petugas' : selectedOfficer);
       
-      doc.text(officerText, valueX, currentY);
-      doc.setFont(undefined, 'normal');
+      pdf.text(officerText, valueX, currentY);
+      pdf.setFont(undefined, 'normal');
       currentY += lineHeight;
       
-      doc.text('Puskeswan', labelX, currentY);
-      doc.text(':', colonX, currentY);
-      doc.text(selectedPuskeswan === 'all-puskeswan' ? 'Semua Puskeswan' : selectedPuskeswan, valueX, currentY);
+      pdf.text('Puskeswan', labelX, currentY);
+      pdf.text(':', colonX, currentY);
+      pdf.text(selectedPuskeswan === 'all-puskeswan' ? 'Semua Puskeswan' : selectedPuskeswan, valueX, currentY);
       currentY += lineHeight;
 
       const monthLabelText = months.find(m => m.value === selectedMonth)?.label || 'Semua Bulan';
@@ -181,9 +181,9 @@ export default function DocsPage() {
       } else {
           periodLabel = `${monthLabelText} ${yearLabelText}`;
       }
-      doc.text('Periode', labelX, currentY);
-      doc.text(':', colonX, currentY);
-      doc.text(periodLabel, valueX, currentY);
+      pdf.text('Periode', labelX, currentY);
+      pdf.text(':', colonX, currentY);
+      pdf.text(periodLabel, valueX, currentY);
 
       if (services.length > 0) {
         const tableColumn = ["No.", "Tanggal", "Puskeswan", "Pemilik", "Alamat", "Jenis Hewan", "Pengobatan", "Perkembangan Kasus"];
@@ -212,7 +212,7 @@ export default function DocsPage() {
         
         const totalLivestock = services.reduce((sum, service) => sum + service.vaccinations.reduce((s, v) => s + v.animalCount, 0), 0);
 
-        autoTable(doc, {
+        autoTable(pdf, {
             head: [tableColumn],
             body: tableRows,
             startY: currentY + 5,
@@ -223,20 +223,20 @@ export default function DocsPage() {
             }
         });
         
-        const finalY = (doc as any).lastAutoTable.finalY;
+        const finalY = (pdf as any).lastAutoTable.finalY;
         const totalText = `Total Data: ${services.length} - Total Pelayanan Keswan: ${totalLivestock} Ekor`;
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
-        doc.text(totalText, 14, finalY + 10);
-        doc.setFont(undefined, 'normal');
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(totalText, 14, finalY + 10);
+        pdf.setFont(undefined, 'normal');
 
       } else {
-        doc.setFontSize(11);
-        doc.text('Tidak ada data pelayanan tabel untuk periode ini.', 14, 50);
+        pdf.setFontSize(11);
+        pdf.text('Tidak ada data pelayanan tabel untuk periode ini.', 14, 50);
       }
 
       const fileName = `laporan-pelayanan-${periodLabel.replace(/\s/g, '_')}.pdf`;
-      doc.save(fileName);
+      pdf.save(fileName);
       setIsGenerating(false);
 
     }).catch(error => {
