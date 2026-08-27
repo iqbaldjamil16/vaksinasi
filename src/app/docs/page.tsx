@@ -160,12 +160,9 @@ export default function DocsPage() {
         currentY += lineHeight;
       };
 
-      const officerText = officerSearchTerm.trim() 
-        ? officerSearchTerm 
-        : (selectedOfficer === 'all-officers' ? 'Semua Petugas' : selectedOfficer);
-      
       drawMetadataRow('Puskeswan', selectedPuskeswan === 'all-puskeswan' ? 'Semua Puskeswan' : selectedPuskeswan);
-      drawMetadataRow('Petugas', officerText);
+      // Hardcode the officer name as requested
+      drawMetadataRow('Petugas', 'drh. Iqbal Djamil');
 
       const monthLabelText = months.find(m => m.value === selectedMonth)?.label || 'Semua Bulan';
       const yearLabelText = selectedYear === 'all-years' ? 'Semua Tahun' : selectedYear;
