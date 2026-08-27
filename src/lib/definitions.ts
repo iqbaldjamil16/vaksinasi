@@ -174,6 +174,13 @@ export const topoyoOfficerList = [
     return a.localeCompare(b);
 });
 
+export const officerListMap: Record<string, string[]> = {
+  'Puskeswan Budong-Budong': budongBudongOfficerList,
+  'Puskeswan Karossa': karossaOfficerList,
+  'Puskeswan Pangale': pangaleOfficerList,
+  'Puskeswan Tobadak': tobadakOfficerList,
+  'Puskeswan Topoyo': topoyoOfficerList,
+};
 
 export const livestockTypes = [
   'Sapi Bali',

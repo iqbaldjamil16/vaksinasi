@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -13,10 +12,11 @@ import { collection, getDocs, query, where, Timestamp, orderBy, Query, DocumentD
 import { type HealthcareService, serviceSchema } from '@/lib/types';
 import { format, getMonth, getYear, subYears, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { puskeswanList, officerListMap } from '@/lib/definitions';
 
 const years = Array.from({ length: 5 }, (_, i) => getYear(subYears(new Date(), i)).toString());
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -38,8 +38,16 @@ export default function DocsPage() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const [isGenerating, setIsGenerating] = useState(false);
+  
   const [selectedMonth, setSelectedMonth] = useState<string>(getMonth(new Date()).toString());
   const [selectedYear, setSelectedYear] = useState<string>(getYear(new Date()).toString());
+  const [selectedPuskeswan, setSelectedPuskeswan] = useState<string>('all-puskeswan');
+  const [selectedOfficer, setSelectedOfficer] = useState<string>('all-officers');
+
+  const currentOfficerList = useMemo(() => {
+    if (selectedPuskeswan === 'all-puskeswan') return [];
+    return officerListMap[selectedPuskeswan] || [];
+  }, [selectedPuskeswan]);
 
   const handleGeneratePdf = () => {
     if (!firestore) {
@@ -101,14 +109,18 @@ export default function DocsPage() {
               });
               allServices.push(service);
           } catch (e) {
-              console.error("Validation error parsing service data for PDF:", e, data);
+              // Validasi error diabaikan
           }
       });
       
-      const services = allServices.filter(s => s.officerName === 'drh. Iqbal Djamil');
+      const services = allServices.filter(s => {
+          const matchPuskeswan = selectedPuskeswan === 'all-puskeswan' || s.puskeswan === selectedPuskeswan;
+          const matchOfficer = selectedOfficer === 'all-officers' || s.officerName.includes(selectedOfficer);
+          return matchPuskeswan && matchOfficer;
+      });
 
       if (services.length === 0) {
-          toast({ title: 'Info', description: 'Tidak ada data pelayanan untuk drh. Muhammad Iqbal Djamil pada periode yang dipilih.' });
+          toast({ title: 'Info', description: 'Tidak ada data pelayanan untuk kriteria yang dipilih.' });
           setIsGenerating(false);
           return;
       }
@@ -132,13 +144,13 @@ export default function DocsPage() {
       doc.text('Petugas', labelX, currentY);
       doc.text(':', colonX, currentY);
       doc.setFont(undefined, 'bold');
-      doc.text('drh. Muhammad Iqbal Djamil', valueX, currentY);
+      doc.text(selectedOfficer === 'all-officers' ? 'Semua Petugas' : selectedOfficer, valueX, currentY);
       doc.setFont(undefined, 'normal');
       currentY += lineHeight;
       
-      doc.text('Kecamatan', labelX, currentY);
+      doc.text('Puskeswan', labelX, currentY);
       doc.text(':', colonX, currentY);
-      doc.text('Topoyo', valueX, currentY);
+      doc.text(selectedPuskeswan === 'all-puskeswan' ? 'Semua Puskeswan' : selectedPuskeswan, valueX, currentY);
       currentY += lineHeight;
 
       const monthLabelText = months.find(m => m.value === selectedMonth)?.label || 'Semua Bulan';
@@ -151,7 +163,7 @@ export default function DocsPage() {
       } else {
           periodLabel = `${monthLabelText} ${yearLabelText}`;
       }
-      doc.text('Bulan', labelX, currentY);
+      doc.text('Periode', labelX, currentY);
       doc.text(':', colonX, currentY);
       doc.text(periodLabel, valueX, currentY);
 
@@ -205,7 +217,8 @@ export default function DocsPage() {
         doc.text('Tidak ada data pelayanan tabel untuk periode ini.', 14, 50);
       }
 
-      doc.save(`laporan-drh-muhammad-iqbal-djamil-${periodLabel.replace(/\s/g, '_')}.pdf`);
+      const fileName = `laporan-pelayanan-${periodLabel.replace(/\s/g, '_')}.pdf`;
+      doc.save(fileName);
       setIsGenerating(false);
 
     }).catch(error => {
@@ -226,10 +239,10 @@ export default function DocsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-              Unduh PDF Khusus
+              Laporan PDF Pelayanan
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2 text-sm md:text-base">
-              Halaman ini menyediakan fitur untuk mengunduh laporan PDF khusus untuk drh. Muhammad Iqbal Djamil.
+              Halaman ini menyediakan fitur untuk mengunduh laporan PDF pelayanan kesehatan hewan berdasarkan filter yang dipilih.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -237,42 +250,71 @@ export default function DocsPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Filter Laporan</CardTitle>
-                <CardDescription>Pilih bulan dan tahun untuk laporan yang akan diunduh.</CardDescription>
+                <CardDescription>Pilih kriteria untuk laporan yang akan diunduh.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-4">
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Pilih Bulan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all-months">Semua Bulan</SelectItem>
-                        {months.map((month) => (
-                            <SelectItem key={month.value} value={month.value}>
-                                {month.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Pilih Tahun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all-years">Semua Tahun</SelectItem>
-                        {years.map((year) => (
-                            <SelectItem key={year} value={year}>
-                                {year}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select value={selectedPuskeswan} onValueChange={(val) => {
+                        setSelectedPuskeswan(val);
+                        setSelectedOfficer('all-officers');
+                    }}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Semua Puskeswan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all-puskeswan">Semua Puskeswan</SelectItem>
+                            {puskeswanList.map((p) => (
+                                <SelectItem key={p} value={p}>{p}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedOfficer} onValueChange={setSelectedOfficer} disabled={selectedPuskeswan === 'all-puskeswan'}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Semua Petugas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all-officers">Semua Petugas</SelectItem>
+                            {currentOfficerList.map((o) => (
+                                <SelectItem key={o} value={o}>{o}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Pilih Bulan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all-months">Semua Bulan</SelectItem>
+                            {months.map((month) => (
+                                <SelectItem key={month.value} value={month.value}>
+                                    {month.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Pilih Tahun" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all-years">Semua Tahun</SelectItem>
+                            {years.map((year) => (
+                                <SelectItem key={year} value={year}>
+                                    {year}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </CardContent>
         </Card>
 
         <Card>
             <CardHeader>
                 <CardTitle>Unduh Laporan PDF</CardTitle>
-                <CardDescription>Hanya memuat data pelayanan khusus untuk drh. Muhammad Iqbal Djamil berdasarkan filter yang dipilih.</CardDescription>
+                <CardDescription>Menghasilkan dokumen PDF sesuai dengan filter petugas, puskeswan, dan periode yang Anda pilih.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Button onClick={handleGeneratePdf} disabled={isGenerating}>

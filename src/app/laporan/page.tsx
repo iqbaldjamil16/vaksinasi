@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect, useMemo } from "react";
@@ -17,11 +16,7 @@ import { type HealthcareService, serviceSchema } from "@/lib/types";
 import { PasswordDialog } from "@/components/password-dialog";
 import { 
   puskeswanList, 
-  budongBudongOfficerList, 
-  karossaOfficerList, 
-  pangaleOfficerList, 
-  tobadakOfficerList, 
-  topoyoOfficerList 
+  officerListMap
 } from "@/lib/definitions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection } from "@/firebase/firestore/use-collection";
@@ -56,14 +51,6 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   value: i.toString(),
   label: new Date(0, i).toLocaleString('id-ID', { month: 'long' })
 }));
-
-const officerListMap: Record<string, string[]> = {
-  'Puskeswan Budong-Budong': budongBudongOfficerList,
-  'Puskeswan Karossa': karossaOfficerList,
-  'Puskeswan Pangale': pangaleOfficerList,
-  'Puskeswan Tobadak': tobadakOfficerList,
-  'Puskeswan Topoyo': topoyoOfficerList,
-};
 
 export default function ReportPage() {
   const router = useRouter();
@@ -191,7 +178,8 @@ export default function ReportPage() {
       }
 
       if (selectedOfficer !== 'all-officers') {
-        servicesToFilter = servicesToFilter.filter(s => s.officerName === selectedOfficer);
+        // Mendukung pencarian berbasis teks jika ada lebih dari satu nama petugas pada satu data inputan
+        servicesToFilter = servicesToFilter.filter(s => s.officerName.includes(selectedOfficer));
       }
 
       const lowercasedFilter = searchTerm.toLowerCase();
