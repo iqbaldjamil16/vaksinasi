@@ -148,7 +148,7 @@ export default function ReportPage() {
             data.caseDevelopments = [{
               status: status,
               count: totalAnimals,
-            }];
+              }];
           }
           
           const service = serviceSchema.parse({
@@ -192,8 +192,9 @@ export default function ReportPage() {
             locale: id,
           }).toLowerCase();
 
-          // Matches if ANY search term is found in ANY relevant field
-          return searchTerms.some(term => 
+          // CHANGED: Use 'every' instead of 'some' to ensure ALL search terms are found in the ONE single record.
+          // This ensures that typing "Haslim, Ishak" only shows data where both are present (as a team).
+          return searchTerms.every(term => 
             ownerName.includes(term) ||
             officerName.includes(term) ||
             animalTypes.includes(term) ||

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo, useTransition } from "react";
@@ -207,8 +206,9 @@ export default function RekapTopoyoPage() {
         startTransition(() => {
           let servicesToFilter = services;
     
-          const lowercasedFilter = searchTerm.toLowerCase();
-          if (lowercasedFilter) {
+          // Updated search logic to support multi-criteria AND search separated by commas
+          const searchTerms = searchTerm.toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+          if (searchTerms.length > 0) {
             servicesToFilter = servicesToFilter.filter((service) => {
               const ownerName = service.ownerName.toLowerCase();
               const officerName = service.officerName.toLowerCase();
@@ -217,11 +217,12 @@ export default function RekapTopoyoPage() {
                 locale: id,
               }).toLowerCase();
     
-              return (
-                ownerName.includes(lowercasedFilter) ||
-                officerName.includes(lowercasedFilter) ||
-                animalTypes.includes(lowercasedFilter) ||
-                formattedDate.includes(lowercasedFilter)
+              // Use 'every' to ensure ALL terms in the search criteria are present in the record
+              return searchTerms.every(term =>
+                ownerName.includes(term) ||
+                officerName.includes(term) ||
+                animalTypes.includes(term) ||
+                formattedDate.includes(term)
               );
             });
           }

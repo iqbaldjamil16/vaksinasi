@@ -124,8 +124,9 @@ export default function DocsPage() {
           let matchOfficer = selectedOfficer === 'all-officers' || s.officerName.includes(selectedOfficer);
           
           // Search term filter match (supports multiple names via comma)
+          // CHANGED: Use 'every' instead of 'some' to ensure ALL search criteria are present in the ONE single data record (as a team)
           if (searchTerms.length > 0) {
-            const matchesSearch = searchTerms.some(term => s.officerName.toLowerCase().includes(term));
+            const matchesSearch = searchTerms.every(term => s.officerName.toLowerCase().includes(term));
             matchOfficer = matchOfficer && matchesSearch;
           }
 
