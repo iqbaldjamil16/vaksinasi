@@ -192,8 +192,7 @@ export default function ReportPage() {
             locale: id,
           }).toLowerCase();
 
-          // CHANGED: Use 'every' instead of 'some' to ensure ALL search terms are found in the ONE single record.
-          // This ensures that typing "Haslim, Ishak" only shows data where both are present (as a team).
+          // logic AND: data must contain ALL search terms
           return searchTerms.every(term => 
             ownerName.includes(term) ||
             officerName.includes(term) ||
@@ -227,7 +226,8 @@ export default function ReportPage() {
 
   const handleDownload = () => {
     const wb = XLSX.utils.book_new();
-    const relevantPuskeswanList = selectedPuskeswan === 'all-puskeswan' 
+    const isAllPuskeswan = selectedPuskeswan === 'all-puskeswan';
+    const relevantPuskeswanList = isAllPuskeswan 
       ? puskeswanList 
       : [selectedPuskeswan];
 
@@ -244,14 +244,6 @@ export default function ReportPage() {
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
-      const servicesByOfficer: { [key: string]: HealthcareService[] } = {};
-      sortedServices.forEach(service => {
-        if (!servicesByOfficer[service.officerName]) {
-          servicesByOfficer[service.officerName] = [];
-        }
-        servicesByOfficer[service.officerName].push(service);
-      });
-
       const allDataForSheet: any[] = [];
       const headers = [
         'Tanggal', 
@@ -264,15 +256,12 @@ export default function ReportPage() {
         'Umur', 
         'Jumlah Hewan'
       ];
-      const officerNames = Object.keys(servicesByOfficer).sort();
 
-      officerNames.forEach(officerName => {
-        allDataForSheet.push({});
-        allDataForSheet.push({});
-        allDataForSheet.push({ 'Nama Petugas': officerName });
+      if (isAllPuskeswan) {
+        // Special case for 'All Puskeswan': No officer grouping headers, just the main list
         allDataForSheet.push(Object.fromEntries(headers.map(h => [h, h])));
         
-        servicesByOfficer[officerName].forEach((service) => {
+        sortedServices.forEach((service) => {
           const groupedVaccinations: Record<string, { 
             animalType: string, 
             gender: string, 
@@ -311,7 +300,64 @@ export default function ReportPage() {
             });
           });
         });
-      });
+      } else {
+        // Grouped by officer (Default behavior for specific puskeswan selection)
+        const servicesByOfficer: { [key: string]: HealthcareService[] } = {};
+        sortedServices.forEach(service => {
+          if (!servicesByOfficer[service.officerName]) {
+            servicesByOfficer[service.officerName] = [];
+          }
+          servicesByOfficer[service.officerName].push(service);
+        });
+
+        const officerNames = Object.keys(servicesByOfficer).sort();
+        officerNames.forEach(officerName => {
+          allDataForSheet.push({});
+          allDataForSheet.push({});
+          allDataForSheet.push({ 'Nama Petugas': officerName });
+          allDataForSheet.push(Object.fromEntries(headers.map(h => [h, h])));
+          
+          servicesByOfficer[officerName].forEach((service) => {
+            const groupedVaccinations: Record<string, { 
+              animalType: string, 
+              gender: string, 
+              age: string, 
+              animalCount: number 
+            }> = {};
+
+            service.vaccinations.forEach(v => {
+              const genderStr = v.gender || '-';
+              const ageStr = v.age ? `${v.age} ${v.ageUnit || ''}` : '-';
+              const key = `${v.animalType}|${genderStr}|${ageStr}`;
+
+              if (groupedVaccinations[key]) {
+                groupedVaccinations[key].animalCount += v.animalCount;
+              } else {
+                groupedVaccinations[key] = {
+                  animalType: v.animalType,
+                  gender: genderStr,
+                  age: ageStr,
+                  animalCount: v.animalCount
+                };
+              }
+            });
+
+            Object.values(groupedVaccinations).forEach(group => {
+              allDataForSheet.push({
+                'Tanggal': format(new Date(service.date), 'dd-MM-yyyy'),
+                'Nama Pemilik': service.ownerName,
+                'Alamat Pemilik': service.ownerAddress,
+                'Program Vaksinasi': service.vaccinationProgram,
+                'Jenis Vaksin': service.vaccineName,
+                'Jenis Hewan': group.animalType,
+                'Jenis Kelamin': group.gender,
+                'Umur': group.age,
+                'Jumlah Hewan': group.animalCount,
+              });
+            });
+          });
+        });
+      }
 
       const sheetName = puskeswan.replace('Puskeswan ', '').replace(/[/\\?*:[\]]/g, '');
       const ws = XLSX.utils.json_to_sheet(allDataForSheet, { skipHeader: true });
