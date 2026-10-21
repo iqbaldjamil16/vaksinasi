@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface StatItem {
   name: string;
   count: number;
+  subName?: string;
 }
 
 function calculateStats(services: HealthcareService[], groupBy: 'month' | 'officerName' | 'puskeswan'): StatItem[] {
@@ -74,7 +75,9 @@ function calculateDetailedStatsByPuskeswan(services: HealthcareService[]): { [pu
     const desa = service.ownerAddress.trim() || 'Tidak Diketahui';
     
     service.vaccinations.forEach(v => {
-      const key = `${desa} (${v.animalType})`;
+      // Include vaccine in the key to differentiate bars and store for the label
+      const vaccine = v.vaccineName || service.vaccineName || 'Tanpa Vaksin';
+      const key = `${desa} (${v.animalType})|${vaccine}`;
       statsMap[pk][key] = (statsMap[pk][key] || 0) + v.animalCount;
     });
   });
@@ -82,11 +85,15 @@ function calculateDetailedStatsByPuskeswan(services: HealthcareService[]): { [pu
   const result: { [puskeswan: string]: StatItem[] } = {};
   for (const pk in statsMap) {
     result[pk] = Object.entries(statsMap[pk])
-      .map(([name, count]) => ({
-        name,
-        count,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name)); // Sort by Desa name
+      .map(([key, count]) => {
+        const [name, vaccine] = key.split('|');
+        return {
+          name,
+          count,
+          subName: vaccine
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   return result;
@@ -147,9 +154,8 @@ const StatChart = ({
   }, [data, showAll]);
 
   const yAxisWidth = isMobile ? 120 : 180;
-  const rightMargin = isMobile ? 50 : 80;
+  const rightMargin = isMobile ? 80 : 120; // Increased to accommodate vaccine labels
 
-  // Adaptive height based on data length
   const barHeight = 28;
   const minChartHeight = 200;
   const chartHeight = Math.max(minChartHeight, chartData.length * barHeight + 50);
@@ -184,13 +190,15 @@ const StatChart = ({
                 cursor={{ fill: "hsl(var(--muted))" }}
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
+                    const item = payload[0].payload as StatItem;
                     return (
                       <div
                         className="rounded-lg border bg-background p-2 shadow-sm text-sm"
                         style={{ whiteSpace: 'nowrap' }}
                       >
                         <span className="font-bold">{label}</span>
-                        <span className="text-muted-foreground ml-2">
+                        {item.subName && <div className="text-xs text-blue-600 font-semibold">{item.subName}</div>}
+                        <span className="text-muted-foreground">
                           {`Jumlah Ternak: ${payload[0].value}`}
                         </span>
                       </div>
@@ -211,11 +219,15 @@ const StatChart = ({
                       offset={8}
                       className="font-semibold"
                       fill="hsl(var(--foreground))"
-                      fontSize={isMobile ? 10 : 11}
+                      fontSize={isMobile ? 9 : 10}
+                      formatter={(value: number, entry: any) => {
+                        const subName = entry.payload.subName;
+                        return subName ? `${value} (${subName})` : value;
+                      }}
                   />
                   {(chartData as StatItem[]).map((entry, index) => {
                       let color = defaultColor || '#808080';
-                      if (title.startsWith('Statistik Kasus/Penyakit')) {
+                      if (title.includes('Populasi di')) {
                         color = '#006400';
                       } else if (title === 'Statistik per Bulan') {
                           color = '#FA8072';
@@ -413,7 +425,10 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
       
       {/* Detailed Stats Section per Puskeswan (Desa & Animal Breakdown) */}
       <div className="pt-4 border-t space-y-6">
-        <h2 className="text-xl font-bold px-2">Statistik Ternak per Desa</h2>
+        <div className="px-2">
+            <h2 className="text-xl font-bold">Statistik Ternak per Desa</h2>
+            <p className="text-xs text-muted-foreground mt-1">Grafik menampilkan jumlah ternak dan (jenis vaksin) yang digunakan.</p>
+        </div>
         {Object.entries(detailedStatsByPuskeswan)
           .sort(([pkA], [pkB]) => pkA.localeCompare(pkB))
           .map(([puskeswan, data]) => (
