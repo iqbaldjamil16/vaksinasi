@@ -61,6 +61,37 @@ function calculateVaccineStats(services: HealthcareService[]): StatItem[] {
       .sort((a, b) => b.count - a.count);
 }
 
+function calculateDetailedStatsByPuskeswan(services: HealthcareService[]): { [puskeswan: string]: StatItem[] } {
+  if (services.length === 0) return {};
+
+  const statsMap: { [puskeswan: string]: { [key: string]: number } } = {};
+
+  services.forEach(service => {
+    const pk = service.puskeswan;
+    if (!pk) return;
+    if (!statsMap[pk]) statsMap[pk] = {};
+
+    const desa = service.ownerAddress.trim() || 'Tidak Diketahui';
+    
+    service.vaccinations.forEach(v => {
+      const key = `${desa} (${v.animalType})`;
+      statsMap[pk][key] = (statsMap[pk][key] || 0) + v.animalCount;
+    });
+  });
+
+  const result: { [puskeswan: string]: StatItem[] } = {};
+  for (const pk in statsMap) {
+    result[pk] = Object.entries(statsMap[pk])
+      .map(([name, count]) => ({
+        name,
+        count,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)); // Sort by Desa name
+  }
+
+  return result;
+}
+
 function calculateVaccineStatsByPuskeswan(services: HealthcareService[]): { [puskeswan: string]: StatItem[] } {
     if (services.length === 0) return {};
   
@@ -118,9 +149,10 @@ const StatChart = ({
   const yAxisWidth = isMobile ? 120 : 180;
   const rightMargin = isMobile ? 50 : 80;
 
-  const barHeight = (title.includes("Kerbau") || title.includes("Statistik per Bulan")) ? 16 : 28;
-  const minChartHeight = (title.includes("Kerbau") || title.includes("Statistik per Bulan")) ? 80 : 150;
-  const chartHeight = Math.max(minChartHeight, chartData.length * barHeight);
+  // Adaptive height based on data length
+  const barHeight = 28;
+  const minChartHeight = 200;
+  const chartHeight = Math.max(minChartHeight, chartData.length * barHeight + 50);
 
 
   return (
@@ -142,7 +174,7 @@ const StatChart = ({
                 tickLine={false}
                 axisLine={false}
                 stroke="hsl(var(--muted-foreground))"
-                fontSize={isMobile ? 11 : 12}
+                fontSize={isMobile ? 10 : 11}
                 interval={0}
                 width={yAxisWidth}
                 tickFormatter={(value) => value}
@@ -179,7 +211,7 @@ const StatChart = ({
                       offset={8}
                       className="font-semibold"
                       fill="hsl(var(--foreground))"
-                      fontSize={isMobile ? 11 : 12}
+                      fontSize={isMobile ? 10 : 11}
                   />
                   {(chartData as StatItem[]).map((entry, index) => {
                       let color = defaultColor || '#808080';
@@ -333,6 +365,7 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
   const statsByPuskeswan = calculateStats(services, 'puskeswan');
   const statsByVaccine = calculateVaccineStats(services);
   const vaccineStatsByPuskeswan = calculateVaccineStatsByPuskeswan(services);
+  const detailedStatsByPuskeswan = calculateDetailedStatsByPuskeswan(services);
 
   const officerToPuskeswanMap: { [key: string]: string } = {};
   services.forEach((service) => {
@@ -377,6 +410,23 @@ export default function StatisticsDisplay({ services }: { services: HealthcareSe
         colors={puskeswanColors}
         defaultColor={defaultColor}
       />
+      
+      {/* Detailed Stats Section per Puskeswan (Desa & Animal Breakdown) */}
+      <div className="pt-4 border-t space-y-6">
+        <h2 className="text-xl font-bold px-2">Statistik Ternak per Desa</h2>
+        {Object.entries(detailedStatsByPuskeswan)
+          .sort(([pkA], [pkB]) => pkA.localeCompare(pkB))
+          .map(([puskeswan, data]) => (
+            <StatChart
+              key={`detailed-${puskeswan}`}
+              title={`Populasi di ${puskeswan.replace('Puskeswan ', '')} (Per Desa & Jenis Hewan)`}
+              data={data}
+              defaultColor={puskeswanColors[puskeswan] || defaultColor}
+              showAll={true}
+            />
+          ))}
+      </div>
+
       <StatChart
         title="Statistik Vaksinasi"
         data={statsByVaccine}
