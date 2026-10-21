@@ -221,7 +221,8 @@ const StatChart = ({
                       fill="hsl(var(--foreground))"
                       fontSize={isMobile ? 9 : 10}
                       formatter={(value: number, entry: any) => {
-                        const subName = entry.payload.subName;
+                        // FIX: Add safe access to entry.payload to prevent runtime crash
+                        const subName = entry?.payload?.subName;
                         return subName ? `${value} (${subName})` : value;
                       }}
                   />
