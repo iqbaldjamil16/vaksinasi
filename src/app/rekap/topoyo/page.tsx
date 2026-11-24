@@ -292,7 +292,7 @@ export default function RekapTopoyoPage() {
         officerNames.forEach(officerName => {
             const officerServices = servicesByOfficer[officerName].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
             
-            const tableHeaders = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'Jenis Ternak', 'Jumlah', 'Vaksin', 'Obat yang Digunakan', 'Dosis'];
+            const tableHeaders = ['Tanggal', 'Nama Pemilik', 'Alamat Pemilik', 'NIK KTP', 'No. HP', 'Jenis Ternak', 'Jumlah', 'Vaksin', 'Obat yang Digunakan', 'Dosis'];
             
             const sheetData: any[][] = [
                 ["PEMERINTAHAN KABUPATEN MAMUJU TENGAH"],
@@ -315,6 +315,8 @@ export default function RekapTopoyoPage() {
                     format(new Date(service.date), 'dd-MM-yyyy'),
                     service.ownerName,
                     service.ownerAddress,
+                    service.nik || '-',
+                    service.phoneNumber || '-',
                     animalDetails,
                     animalCounts,
                     vaccineNames,
@@ -336,6 +338,8 @@ export default function RekapTopoyoPage() {
                 { wch: 12 }, 
                 { wch: 20 }, 
                 { wch: 20 }, 
+                { wch: 20 }, 
+                { wch: 15 },
                 { wch: 20 }, 
                 { wch: 10 }, 
                 { wch: 20 }, 
@@ -391,7 +395,7 @@ export default function RekapTopoyoPage() {
         <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">Rekap Puskeswan Topoyo</h1>
             <p className="text-muted-foreground mt-2 text-sm md:text-base">
-            Ringkasan penggunaan obat, kasus, dan detail inputan di Puskeswan Topoyo.
+            Ringkasan penggunaan obat, kasus, and detail inputan di Puskeswan Topoyo.
             </p>
         </div>
 
